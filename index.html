@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Bay Lines · Unofficial Bay Area transit map</title>
+    <meta
+      name="description"
+      content="An unofficial, accessible BART map: route suggestions, how far you can get in a set time, a timetable replay and two quick games, built from BART's published schedule."
+    />
+    <meta name="theme-color" content="#faf9f5" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Bay Lines · Unofficial Bay Area transit map" />
+    <meta
+      property="og:description"
+      content="Route suggestions, reach maps, a timetable replay and games on a schematic BART map. Not affiliated with BART."
+    />
+    <style>
+      :root {
+        color-scheme: light;
+        box-sizing: border-box;
+        padding-top: env(safe-area-inset-top, 0px);
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+      }
+      html {
+        scroll-padding-top: env(safe-area-inset-top, 0px);
+      }
+      body {
+        margin: 0;
+        padding: 0;
+        font:
+          14px -apple-system,
+          BlinkMacSystemFont,
+          sans-serif;
+        background: #faf9f5;
+        color: #141413;
+      }
+      img {
+        max-width: 100%;
+      }
+      [hidden]:not([hidden='until-found' i]) {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>Bay Lines needs JavaScript to draw the map.</noscript>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

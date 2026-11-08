@@ -1,0 +1,5 @@
+dist
+node_modules
+src/data/*.json
+src/styles.css
+api/_lib/stop-parents.js
