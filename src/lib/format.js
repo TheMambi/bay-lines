@@ -39,20 +39,25 @@ export function formatDateTime(value) {
   });
 }
 
+const BART_HOST = /(^|\.)bart\.gov$/i;
+
+// The alerts feed supplies this link and the app labels it "More on bart.gov",
+// so anything that doesn't point at bart.gov over https is dropped.
 export function safeBartUrl(url) {
-  if (url) {
-    try {
-      const parsed = new URL(url);
-      if (parsed.protocol === 'http:' && /(^|\.)bart\.gov$/i.test(parsed.hostname)) {
-        parsed.protocol = 'https:';
-      }
-      if (parsed.protocol === 'https:') {
-        return parsed.toString();
-      }
+  if (!url) {
+    return undefined;
+  }
+  try {
+    const parsed = new URL(url);
+    if (!BART_HOST.test(parsed.hostname) || parsed.username || parsed.password) {
       return undefined;
-    } catch {
-      return;
     }
+    if (parsed.protocol === 'http:') {
+      parsed.protocol = 'https:';
+    }
+    return parsed.protocol === 'https:' ? parsed.toString() : undefined;
+  } catch {
+    return undefined;
   }
 }
 

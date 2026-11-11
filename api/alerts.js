@@ -5,27 +5,69 @@ import { FEED_URL, decodeAlertsFeed } from './_lib/alerts-feed.js';
 
 const FETCH_TIMEOUT_MS = 8000;
 
+// BART's feed is a few kilobytes. Anything far beyond that is not the feed, so it is
+// refused before it is buffered and decoded.
+export const MAX_FEED_BYTES = 1024 * 1024;
+
+// A warm instance answers from memory for this long. The CDN cache is keyed by the full
+// URL, so without this a caller could add a throwaway query string to every request and
+// turn each one into a request to BART.
+export const MIN_REFETCH_MS = 30000;
+
+const FRESH_CACHE = 'public, max-age=0, s-maxage=60, stale-while-revalidate=120';
+
 // Last good payload, kept per warm instance so a brief upstream outage
 // can still be answered (marked stale) instead of failing outright.
 let lastGood = null;
+let lastGoodAt = 0;
 
-const json = (body, status, cacheControl) =>
+const json = (body, status, cacheControl, extraHeaders) =>
   new Response(JSON.stringify(body), {
     status,
-    headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': cacheControl },
+    headers: {
+      'content-type': 'application/json; charset=utf-8',
+      'cache-control': cacheControl,
+      'x-content-type-options': 'nosniff',
+      ...extraHeaders,
+    },
   });
+
+async function readFeed() {
+  const upstream = await fetch(FEED_URL, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+  if (!upstream.ok) throw new Error(`upstream status ${upstream.status}`);
+  if (Number(upstream.headers.get('content-length')) > MAX_FEED_BYTES) {
+    throw new Error('upstream feed too large');
+  }
+  // content-length can be absent or wrong, so the bytes are counted as they arrive.
+  const chunks = [];
+  let size = 0;
+  for await (const chunk of upstream.body) {
+    size += chunk.byteLength;
+    if (size > MAX_FEED_BYTES) throw new Error('upstream feed too large');
+    chunks.push(chunk);
+  }
+  const bytes = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return bytes;
+}
 
 export default {
   async fetch(request) {
     if (request.method !== 'GET' && request.method !== 'HEAD') {
-      return json({ error: 'Method not allowed' }, 405, 'no-store');
+      return json({ error: 'Method not allowed' }, 405, 'no-store', { allow: 'GET, HEAD' });
+    }
+    if (lastGood && Date.now() - lastGoodAt < MIN_REFETCH_MS) {
+      return json(lastGood, 200, FRESH_CACHE);
     }
     try {
-      const upstream = await fetch(FEED_URL, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
-      if (!upstream.ok) throw new Error(`upstream status ${upstream.status}`);
-      const payload = decodeAlertsFeed(new Uint8Array(await upstream.arrayBuffer()));
+      const payload = decodeAlertsFeed(await readFeed());
       lastGood = payload;
-      return json(payload, 200, 'public, max-age=0, s-maxage=60, stale-while-revalidate=120');
+      lastGoodAt = Date.now();
+      return json(payload, 200, FRESH_CACHE);
     } catch (error) {
       console.error('alerts proxy failed:', error.message);
       if (lastGood) return json({ ...lastGood, stale: true }, 200, 'no-store');

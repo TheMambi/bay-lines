@@ -25,12 +25,17 @@ describe('format helpers', () => {
     expect(plural(3, 'stop')).toBe('3 stops');
   });
 
-  it('only lets https links (or upgradable bart.gov links) through', () => {
+  it('only lets bart.gov links through, upgraded to https', () => {
     expect(safeBartUrl('http://www.bart.gov/schedules/advisories')).toBe(
       'https://www.bart.gov/schedules/advisories',
     );
-    expect(safeBartUrl('https://example.com/x')).toBe('https://example.com/x');
-    expect(safeBartUrl('http://example.com/x')).toBeUndefined();
+    expect(safeBartUrl('https://bart.gov/x')).toBe('https://bart.gov/x');
+    expect(safeBartUrl('https://example.com/x')).toBeUndefined();
+    expect(safeBartUrl('https://bart.gov.example.com/x')).toBeUndefined();
+    expect(safeBartUrl('https://notbart.gov/x')).toBeUndefined();
+    expect(safeBartUrl('https://user:pw@www.bart.gov/x')).toBeUndefined();
     expect(safeBartUrl('javascript:alert(1)')).toBeUndefined();
+    expect(safeBartUrl('not a url')).toBeUndefined();
+    expect(safeBartUrl(null)).toBeUndefined();
   });
 });
