@@ -1,5 +1,8 @@
 # Bay Lines
 
+[![CI](https://github.com/TheMambi/bay-lines/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/TheMambi/bay-lines/actions/workflows/ci.yml)
+[![MIT licence](https://img.shields.io/badge/licence-MIT-blue.svg)](LICENSE)
+
 An unofficial, interactive map of the BART network. It suggests routes, shows how far you can get in a set time, replays the published timetable as moving trains, and has two small games. Everything runs on BART's published schedule data, and service alerts come from BART's realtime feed through a small serverless proxy.
 
 **Live:** https://bay-lines.vercel.app
