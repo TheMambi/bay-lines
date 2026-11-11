@@ -59,7 +59,12 @@ src/
   map/               schematic layout, geometry, label placement, SVG layers
   data/              network.json (from BART GTFS), geography.json (Natural Earth)
 test/                unit tests
+.github/             CI workflow and Dependabot config
 ```
+
+## Security
+
+The site sends a strict Content-Security-Policy, the alerts function accepts no caller input and caps what it reads from BART, and CI runs `npm audit` on every push. See [SECURITY.md](SECURITY.md) for the details and for how to report a problem privately.
 
 ## Data and licences
 
