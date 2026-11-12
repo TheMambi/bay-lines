@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "Unofficial interactive BART map: route suggestions, reach map, timetable replay and games, built from BART's published GTFS schedule.",
   "type": "module",
-  "license": "MIT",
+  "license": "AGPL-3.0-or-later",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

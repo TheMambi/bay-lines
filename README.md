@@ -1,7 +1,7 @@
 # Bay Lines
 
 [![CI](https://github.com/TheMambi/bay-lines/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/TheMambi/bay-lines/actions/workflows/ci.yml)
-[![MIT licence](https://img.shields.io/badge/licence-MIT-blue.svg)](LICENSE)
+[![AGPL-3.0 licence](https://img.shields.io/badge/licence-AGPL--3.0-blue.svg)](LICENSE)
 
 An unofficial, interactive map of the BART network. It suggests routes, shows how far you can get in a set time, replays the published timetable as moving trains, and has two small games. Everything runs on BART's published schedule data, and service alerts come from BART's realtime feed through a small serverless proxy.
 
@@ -77,4 +77,6 @@ The site sends a strict Content-Security-Policy, the alerts function accepts no 
 - **Land outline** (`src/data/geography.json`) is generalised from [Natural Earth](https://www.naturalearthdata.com/) 1:10m data, which is public domain.
 - **Typeface:** Atkinson Hyperlegible Next, SIL Open Font License 1.1.
 
-The source code is MIT licensed (see `LICENSE`). The MIT licence does not cover BART's data, which stays under BART's terms.
+Copyright (C) 2026 TheMambi. This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. See `LICENSE` for the full text.
+
+The AGPL licence covers the source code only. The files in `src/data/` are not covered by it: `network.json` is derived from BART's GTFS feed and used under the BART Developer License Agreement, and `geography.json` is derived from Natural Earth data, which is public domain.
