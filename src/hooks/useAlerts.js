@@ -1,11 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { assertAlertsPayload } from '../lib/alerts';
 
 const ALERT_REFRESH_MS = 90000;
-
-function assertPayload(data) {
-  if (!data || !Array.isArray(data.alerts)) throw new Error('unexpected alerts payload');
-  return data;
-}
 
 /**
  * Polls the app's /api/alerts proxy while the page is visible.
@@ -27,7 +23,7 @@ export function useAlerts(url = '/api/alerts') {
     try {
       const response = await fetch(url, { headers: { accept: 'application/json' } });
       if (!response.ok) throw new Error(`status ${response.status}`);
-      const data = assertPayload(await response.json());
+      const data = assertAlertsPayload(await response.json());
       if (requestId !== requestIdRef.current) return;
       const good = { data, receivedAt: Date.now() };
       lastGoodRef.current = good;

@@ -217,6 +217,11 @@ export function usePanZoom(elRef, { content, minK = 0.35, maxK = 4.5, insets }) 
       if (!pointers.has(event.pointerId) || !gesture) {
         return;
       }
+      // A short press released over the panel or outside the window never reaches this element.
+      if (event.pointerType === 'mouse' && event.buttons === 0) {
+        onPointerUp(event);
+        return;
+      }
       pointers.set(event.pointerId, localPoint(event));
       const pts = [...pointers.values()];
       if (pts.length === 1) {
@@ -300,6 +305,14 @@ export function usePanZoom(elRef, { content, minK = 0.35, maxK = 4.5, insets }) 
       el.removeEventListener('dblclick', onDoubleClick);
     };
   }, [elRef, commit, constrain, zoomAt, minK, maxK]);
+  useEffect(
+    () => () => {
+      if (animRef.current != null) {
+        cancelAnimationFrame(animRef.current);
+      }
+    },
+    [],
+  );
   const wasDragged = useCallback(() => draggedRef.current, []);
   const autoFit = useCallback(
     (bounds) => {

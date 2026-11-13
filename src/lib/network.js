@@ -35,7 +35,56 @@ function selectRegularPatterns(patterns, service) {
   });
 }
 
+// Runs at load, so a bad data refresh fails every test and names the entry at fault. Unchecked, a
+// pattern with a short `dep` list gives NaN travel times and its trips quietly drop out of routing.
+export function assertNetwork(data) {
+  const fail = (message) => {
+    throw new Error(`network.json: ${message}`);
+  };
+  for (const key of ['stations', 'lines', 'patterns']) {
+    if (!Array.isArray(data[key]) || data[key].length === 0) {
+      fail(`"${key}" must be a list with at least one entry`);
+    }
+  }
+  const stationIds = new Set(data.stations.map((station) => station.id));
+  const lineIds = new Set(data.lines.map((line) => line.id));
+  const isNumberList = (list, length) =>
+    Array.isArray(list) && list.length === length && list.every(Number.isFinite);
+  for (const pattern of data.patterns) {
+    if (!lineIds.has(pattern.lineId)) {
+      fail(`pattern ${pattern.id} runs on unknown line ${pattern.lineId}`);
+    }
+    const unknown = pattern.stations.find((stationId) => !stationIds.has(stationId));
+    if (unknown !== undefined) {
+      fail(`pattern ${pattern.id} stops at unknown station ${unknown}`);
+    }
+    const stops = pattern.stations.length;
+    if (!isNumberList(pattern.arr, stops) || !isNumberList(pattern.dep, stops)) {
+      fail(`pattern ${pattern.id} needs one arrival and one departure minute for each stop`);
+    }
+  }
+  const order = data.fares?.stationOrder ?? [];
+  if (
+    order.length !== stationIds.size ||
+    new Set(order).size !== stationIds.size ||
+    !order.every((stationId) => stationIds.has(stationId))
+  ) {
+    fail('the fare tables must list every station exactly once');
+  }
+  for (const category of data.fares.categories) {
+    const rows = category.cents;
+    if (
+      !Array.isArray(rows) ||
+      rows.length !== order.length ||
+      !rows.every((row) => isNumberList(row, order.length))
+    ) {
+      fail(`fare table ${category.id} is not a full grid of numbers`);
+    }
+  }
+}
+
 function buildNetwork(networkData) {
+  assertNetwork(networkData);
   const stations = [...networkData.stations];
   const stationById = new Map(stations.map((station) => [station.id, station]));
   const lineById = new Map(networkData.lines.map((line) => [line.id, line]));
