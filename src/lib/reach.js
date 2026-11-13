@@ -1,128 +1,34 @@
-import { MinHeap } from './minHeap';
+import { buildServiceGraph, legsFromPath, shortestPaths } from './graph';
+import { buildItinerary } from './routing';
 
+// Each station gets the route the trip planner would suggest. The transfer and first-wait minutes are
+// the rider's own assumptions, so they are added to that route's time and never used to choose it:
+// as search costs they make a change free at "none", and a one-seat ride is listed as a dozen changes.
 export function computeReach(net, service, originId, transferMinutes = 5, firstWaitMinutes = 0) {
   const result = new Map();
   if (!net.stationById.has(originId)) {
     return result;
   }
-  const patterns = net.activePatterns(service);
-  const stationIndex = new Map(net.stations.map((station, index) => [station.id, index]));
-  const length = net.stations.length;
-  const patternOffset = [];
-  let nodeCount = length;
-  for (const pattern of patterns) {
-    patternOffset.push(nodeCount);
-    nodeCount += pattern.stations.length;
-  }
-  const graph = Array.from({ length: nodeCount }, () => []);
-  patterns.forEach((pattern, patternIndex) => {
-    const tieBreak =
-      0.01 / (1 + (pattern.service[service.day]?.[service.period]?.trips ?? 1)) + patternIndex * 1e-7;
-    const lastStop = pattern.stations.length - 1;
-    pattern.stations.forEach((stationId, stopIndex) => {
-      const node = patternOffset[patternIndex] + stopIndex;
-      const stationNode = stationIndex.get(stationId);
-      if (stopIndex < lastStop) {
-        graph[stationNode].push({
-          to: node,
-          cost:
-            (stationId === originId ? Math.max(0, firstWaitMinutes) : Math.max(0, transferMinutes)) +
-            tieBreak,
-        });
-      }
-      if (stopIndex < lastStop) {
-        graph[node].push({
-          to: node + 1,
-          cost: Math.max(0.5, pattern.dep[stopIndex + 1] - pattern.dep[stopIndex]),
-        });
-      }
-      if (stopIndex > 0) {
-        graph[node].push({ to: stationNode, cost: 0 });
-      }
-    });
-  });
-  const source = stationIndex.get(originId);
-  const dist = Array(nodeCount).fill(Infinity);
-  const prev = Array(nodeCount).fill(-1);
-  const queue = new MinHeap();
-  dist[source] = 0;
-  queue.push(0, source);
-  while (queue.size) {
-    const [cost, node] = queue.pop();
-    if (!(cost > dist[node])) {
-      for (const arc of graph[node]) {
-        const candidate = cost + arc.cost;
-        if (candidate < dist[arc.to] - 1e-12) {
-          dist[arc.to] = candidate;
-          prev[arc.to] = node;
-          queue.push(candidate, arc.to);
-        }
-      }
-    }
-  }
-  const patternAt = (node) => {
-    let lo = 0;
-    let hi = patterns.length - 1;
-    while (lo < hi) {
-      const mid = (lo + hi + 1) >> 1;
-      if (patternOffset[mid] <= node) {
-        lo = mid;
-      } else {
-        hi = mid - 1;
-      }
-    }
-    return lo;
-  };
+  const graph = buildServiceGraph(net, service);
+  const { dist, prev } = shortestPaths(graph, originId);
   net.stations.forEach((station, index) => {
     if (!isFinite(dist[index])) {
       return;
     }
-    if (index === source) {
+    if (station.id === originId) {
       result.set(station.id, { minutes: 0, rideMinutes: 0, transfers: 0, lineIds: [] });
       return;
     }
-    const path = [];
-    for (let node = index; node !== -1; node = prev[node]) {
-      path.push(node);
-    }
-    path.reverse();
-    const legs = [];
-    let leg = null;
-    for (let step = 1; step < path.length; step++) {
-      const prevNode = path[step - 1];
-      const node = path[step];
-      if (prevNode < length && node >= length) {
-        const patternIndex = patternAt(node);
-        leg = {
-          pattern: patterns[patternIndex],
-          i0: node - patternOffset[patternIndex],
-          i1: node - patternOffset[patternIndex],
-        };
-      } else {
-        if (prevNode >= length && node >= length) {
-          if (leg) {
-            leg.i1 = node - patternOffset[patternAt(node)];
-          }
-        } else if (prevNode >= length && node < length) {
-          if (leg) {
-            legs.push(leg);
-          }
-          leg = null;
-        }
-      }
-    }
-    const rideMinutes = legs.reduce(
-      (acc, item) => acc + Math.max(1, Math.round(item.pattern.arr[item.i1] - item.pattern.dep[item.i0])),
-      0,
-    );
-    const transfers = Math.max(0, legs.length - 1);
+    const itinerary = buildItinerary(net, service, { legs: legsFromPath(graph, prev, station.id) });
     result.set(station.id, {
       minutes: Math.round(
-        rideMinutes + Math.max(0, firstWaitMinutes) + transfers * Math.max(0, transferMinutes),
+        itinerary.rideMinutes +
+          Math.max(0, firstWaitMinutes) +
+          itinerary.transfers * Math.max(0, transferMinutes),
       ),
-      rideMinutes,
-      transfers,
-      lineIds: legs.map((part) => part.pattern.lineId),
+      rideMinutes: itinerary.rideMinutes,
+      transfers: itinerary.transfers,
+      lineIds: itinerary.legs.map((leg) => leg.lineId),
     });
   });
   return result;

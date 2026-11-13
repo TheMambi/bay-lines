@@ -67,7 +67,7 @@ export function AboutContent({ net, geographyAttribution }) {
         <li>
           <strong>Reach</strong>
           {
-            ' finds the shortest scheduled travel time from your chosen station to every other one, over the same stopping patterns. Each change of train adds the transfer time '
+            ' takes the route the trip planner would suggest from your chosen station to every other one and shows its scheduled travel time. Each change of train adds the transfer time '
           }
           <em>you</em>
           {

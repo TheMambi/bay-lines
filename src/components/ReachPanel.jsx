@@ -371,7 +371,7 @@ export function ReachPanel({
         hint="Also your assumption: BART’s schedule doesn’t say how long you’ll wait for a connecting train, so you choose."
       />
       <ServicePicker service={service} nowService={nowService} usingNow={usingNow} onService={onService} />
-      {origin && reach && summary && !sameStart ? (
+      {origin && reach && summary ? (
         meetMode ? (
           <>
             <h3 className="card-h">

@@ -1,113 +1,19 @@
-import { MinHeap } from './minHeap';
+import { buildServiceGraph, legsFromPath, shortestPaths } from './graph';
 import { serviceKey } from './network';
 
 const ALTERNATIVE_SLACK_MINUTES = 25;
 
 function shortestPath(net, service, fromId, toId, exclude) {
-  const patterns = net.activePatterns(service).filter((pattern) => !exclude.lines.has(pattern.lineId));
-  const stationIndex = new Map(net.stations.map((station, index) => [station.id, index]));
-  const length = net.stations.length;
-  const patternOffset = [];
-  let nodeCount = length;
-  for (const pattern of patterns) {
-    patternOffset.push(nodeCount);
-    nodeCount += pattern.stations.length;
-  }
-  const graph = Array.from({ length: nodeCount }, () => []);
-  patterns.forEach((pattern, patternIndex) => {
-    const tieBreak =
-      0.01 / (1 + (pattern.service[service.day]?.[service.period]?.trips ?? 1)) + patternIndex * 1e-7;
-    const lastStop = pattern.stations.length - 1;
-    pattern.stations.forEach((stationId, stopIndex) => {
-      const node = patternOffset[patternIndex] + stopIndex;
-      const stationNode = stationIndex.get(stationId);
-      if (stopIndex < lastStop && (stationId === fromId || !exclude.transferStations.has(stationId))) {
-        graph[stationNode].push({ to: node, cost: 8 + tieBreak });
-      }
-      if (stopIndex < lastStop) {
-        graph[node].push({
-          to: node + 1,
-          cost: Math.max(0.5, pattern.dep[stopIndex + 1] - pattern.dep[stopIndex]),
-        });
-      }
-      if (stopIndex > 0) {
-        graph[node].push({ to: stationNode, cost: 0 });
-      }
-    });
-  });
-  const source = stationIndex.get(fromId);
-  const target = stationIndex.get(toId);
-  const dist = Array(nodeCount).fill(Infinity);
-  const prev = Array(nodeCount).fill(-1);
-  const queue = new MinHeap();
-  dist[source] = 0;
-  queue.push(0, source);
-  while (queue.size) {
-    const [cost, node] = queue.pop();
-    if (!(cost > dist[node])) {
-      if (node === target) {
-        break;
-      }
-      for (const arc of graph[node]) {
-        const candidate = cost + arc.cost;
-        if (candidate < dist[arc.to] - 1e-12) {
-          dist[arc.to] = candidate;
-          prev[arc.to] = node;
-          queue.push(candidate, arc.to);
-        }
-      }
-    }
-  }
-  if (!isFinite(dist[target])) {
+  const graph = buildServiceGraph(net, service, exclude, fromId);
+  const { dist, prev } = shortestPaths(graph, fromId, toId);
+  const cost = dist[graph.stationIndex.get(toId)];
+  if (!isFinite(cost)) {
     return null;
   }
-  const path = [];
-  for (let node = target; node !== -1; node = prev[node]) {
-    path.push(node);
-  }
-  path.reverse();
-  const patternAt = (node) => {
-    let lo = 0;
-    let hi = patterns.length - 1;
-    while (lo < hi) {
-      const mid = (lo + hi + 1) >> 1;
-      if (patternOffset[mid] <= node) {
-        lo = mid;
-      } else {
-        hi = mid - 1;
-      }
-    }
-    return lo;
-  };
-  const legs = [];
-  let leg = null;
-  for (let step = 1; step < path.length; step++) {
-    const prevNode = path[step - 1];
-    const node = path[step];
-    if (prevNode < length && node >= length) {
-      const patternIndex = patternAt(node);
-      leg = {
-        pattern: patterns[patternIndex],
-        i0: node - patternOffset[patternIndex],
-        i1: node - patternOffset[patternIndex],
-      };
-    } else {
-      if (prevNode >= length && node >= length) {
-        if (leg) {
-          leg.i1 = node - patternOffset[patternAt(node)];
-        }
-      } else if (prevNode >= length && node < length) {
-        if (leg) {
-          legs.push(leg);
-        }
-        leg = null;
-      }
-    }
-  }
-  return { cost: dist[target], legs };
+  return { cost, legs: legsFromPath(graph, prev, toId) };
 }
 
-function buildItinerary(net, service, path) {
+export function buildItinerary(net, service, path) {
   const patterns = net.activePatterns(service);
   const legs = path.legs.map((leg) => ({ ...leg }));
   const changeOptions = legs.map(() => []);
@@ -138,7 +44,6 @@ function buildItinerary(net, service, path) {
   }
   const builtLegs = legs.map(({ pattern, i0, i1 }, legIndex) => {
     const stops = pattern.stations.slice(i0, i1 + 1);
-    const minutes = Math.max(1, Math.round(pattern.arr[i1] - pattern.dep[i0]));
     const candidates = patterns
       .filter((candidate) => {
         const start = candidate.stations.indexOf(stops[0]);
@@ -150,6 +55,9 @@ function buildItinerary(net, service, path) {
             (a.service[service.day]?.[service.period]?.trips ?? 0) || a.lineId.localeCompare(b.lineId),
       );
     const best = candidates[0] ?? pattern;
+    // Timed on the train the leg names: another line can cover the same stops in fewer minutes.
+    const boarded = best.stations.indexOf(stops[0]);
+    const minutes = Math.max(1, Math.round(best.arr[boarded + stops.length - 1] - best.dep[boarded]));
     const alsoWorks = [];
     for (const candidate of candidates) {
       if (!(
@@ -196,6 +104,12 @@ function buildItinerary(net, service, path) {
 
 const itinerarySignature = (itinerary) => itinerary.legs.map((leg) => `${leg.from}>${leg.to}`).join('|');
 
+// With a change barred at one station, the search can ride past that station and come back through it.
+const doublesBack = (itinerary) => {
+  const visited = itinerary.legs.flatMap((leg, index) => (index === 0 ? leg.stops : leg.stops.slice(1)));
+  return new Set(visited).size !== visited.length;
+};
+
 const routeCache = new WeakMap();
 
 export function planTrips(net, service, fromId, toId) {
@@ -237,7 +151,7 @@ export function planTrips(net, service, fromId, toId) {
       }
       const itinerary = buildItinerary(net, service, path);
       const signature = itinerarySignature(itinerary);
-      if (!seen.has(signature)) {
+      if (!seen.has(signature) && !doublesBack(itinerary)) {
         seen.add(signature);
         alternatives.push({ it: itinerary, cost: path.cost });
       }
