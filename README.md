@@ -62,6 +62,7 @@ src/
   map/               schematic layout, geometry, label placement, SVG layers
   data/              network.json (from BART GTFS), geography.json (Natural Earth)
 test/                unit tests
+docs/                README screenshots, known pitfalls (PITFALLS.md)
 .github/             CI workflow and Dependabot config
 ```
 

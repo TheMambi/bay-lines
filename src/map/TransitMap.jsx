@@ -12,6 +12,7 @@ import { usePanZoom } from '../hooks/usePanZoom';
 import { reachBand } from '../lib/reach';
 import { TrainsLayer } from './TrainsLayer';
 import { buildGeometry } from './geometry';
+import { nearestStation } from './hitTest';
 import {
   LABEL_FONT,
   boxHitsSegment,
@@ -742,6 +743,22 @@ export const TransitMap = memo(
         15 / zoom,
         Math.max(geometry.symbols.get(stationId).half, geometry.symbols.get(stationId).thick),
       );
+    // Hit circles overlap on a small or zoomed-out map, so the one under the pointer can be a neighbor's.
+    const stationAt = (event, stationId) => {
+      const rect = surfaceRef.current.getBoundingClientRect();
+      const point = panZoom.toWorld(event.clientX - rect.left, event.clientY - rect.top);
+      const targets = net.stations.map((station) => ({
+        id: station.id,
+        ...pos(station.id),
+        r: hitRadius(station.id),
+      }));
+      return nearestStation(targets, point) ?? stationId;
+    };
+    const onStationHover = (event, stationId) => {
+      if (event.pointerType === 'mouse') {
+        setHovered(stationAt(event, stationId));
+      }
+    };
     return (
       <div
         ref={surfaceRef}
@@ -824,17 +841,14 @@ export const TransitMap = memo(
                   }
                   aria-pressed={station.id === selected}
                   className="hit"
-                  onClick={() => handleStationClick(station.id)}
-                  onKeyDown={(event) => onStationKeyDown(event, station.id)}
-                  onPointerEnter={(event) => event.pointerType === 'mouse' && setHovered(station.id)}
-                  onPointerLeave={() =>
-                    setHovered((prev) => {
-                      if (prev === station.id) {
-                        return null;
-                      }
-                      return prev;
-                    })
+                  onClick={(event) =>
+                    // A click that no pointer made (assistive technology, a script) has no position.
+                    handleStationClick(event.detail ? stationAt(event, station.id) : station.id)
                   }
+                  onKeyDown={(event) => onStationKeyDown(event, station.id)}
+                  onPointerEnter={(event) => onStationHover(event, station.id)}
+                  onPointerMove={(event) => onStationHover(event, station.id)}
+                  onPointerLeave={() => setHovered(null)}
                   onFocus={(event) => {
                     setTabStop(station.id);
                     if (event.currentTarget.matches(':focus-visible')) {

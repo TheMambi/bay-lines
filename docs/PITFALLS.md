@@ -1,0 +1,7 @@
+# Known pitfalls
+
+Symptom, cause and fix for traps this project has already hit. Read before touching the area named.
+
+| Area | Symptom                                                                                   | Cause                                                                                                                                              | Fix                                                                                                                                                                                                                     |
+| ---- | ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Map  | A tap or click on a station selects the station next to it on a phone or a zoomed-out map | Station hit circles stay 30 px wide on screen, so below a scale of about 0.43 they overlap and the browser reports whichever circle was drawn last | `stationAt` in `src/map/TransitMap.jsx` resolves the pointer with `nearestStation` (`src/map/hitTest.js`). Send any new pointer handler on a station through it instead of trusting the element that received the event |
