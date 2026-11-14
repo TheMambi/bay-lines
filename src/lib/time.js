@@ -73,7 +73,7 @@ export function formatMinute(minute) {
   return `${hours % 12 === 0 ? 12 : hours % 12}:${String(mins).padStart(2, '0')} ${suffix}`;
 }
 
-export function pacificDate(date) {
+export function pacificDate(date = new Date()) {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: TIME_ZONE,
     year: 'numeric',

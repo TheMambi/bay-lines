@@ -36,14 +36,14 @@ Accessibility was a design goal: keyboard navigation across the map (arrow keys 
 
 ## Tech
 
-React 19, Vite, plain CSS, SVG for the map. No map library and no UI framework. Vitest for unit tests, ESLint and Prettier for code style. Deployed on Vercel.
+React 19, Vite, plain CSS, SVG for the map. No map library and no UI framework. Vitest for unit tests (with jsdom for the ones that open the app), ESLint and Prettier for code style. Deployed on Vercel.
 
 ## Run it locally
 
 ```bash
 npm install
 npm run dev      # http://localhost:5173, alerts proxy included
-npm test         # unit tests
+npm test         # unit tests and app tests
 npm run lint
 npm run build && npm run preview
 ```
@@ -61,7 +61,7 @@ src/
   lib/               network model, routing, reach, time, search, formatting
   map/               schematic layout, geometry, label placement, SVG layers
   data/              network.json (from BART GTFS), geography.json (Natural Earth)
-test/                unit tests
+test/                unit tests, and app tests that run in jsdom (helpers in dom.js)
 docs/                README screenshots, known pitfalls (PITFALLS.md)
 .github/             CI workflow and Dependabot config
 ```

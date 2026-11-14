@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { GuessTheRide } from './GuessTheRide';
 import { StationSprint } from './StationSprint';
-import { EMPTY_GAME, pacificDate, readBest } from '../../lib/games';
+import { EMPTY_GAME, readBest } from '../../lib/games';
+import { pacificDate } from '../../lib/time';
 
 export function GamesPanel(props) {
   const [game, setGame] = useState(null);

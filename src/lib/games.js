@@ -13,15 +13,6 @@ function seededRandom(seed) {
   };
 }
 
-export function pacificDate(date = new Date()) {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'America/Los_Angeles',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(date);
-}
-
 export function dailySeed(date, game) {
   let hash = 2166136261;
   for (const ch of `bay-lines|${game}|${date}`) {
