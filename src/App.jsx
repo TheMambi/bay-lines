@@ -20,7 +20,7 @@ import { tagAlerts } from './lib/alerts';
 import { formatDate, plural } from './lib/format';
 import { EMPTY_GAME } from './lib/games';
 import { loadGeography } from './lib/geography';
-import { net } from './lib/network';
+import { net, serviceKey } from './lib/network';
 import { computeReach, meetingPoints } from './lib/reach';
 import { ReplayClock } from './lib/replay';
 import { planTrips } from './lib/routing';
@@ -137,9 +137,18 @@ export function App() {
   const [sheetHeight, setSheetHeight] = useState(0);
   const { state, refresh } = useAlerts();
   const now = useNow();
-  const nowService = useMemo(() => serviceAt(now, net.data.meta.serviceDateOverrides), [now]);
+  const nowServiceId = useMemo(() => serviceKey(serviceAt(now, net.data.meta.serviceDateOverrides)), [now]);
+  // The clock ticks every minute. The service object must change only when the day or period does,
+  // or everything keyed on it (the chosen route option, Reach, the line layer) resets every minute.
+  const nowService = useMemo(() => {
+    const [day, period] = nowServiceId.split(':');
+    return { day, period };
+  }, [nowServiceId]);
   const service = serviceOverride ?? nowService;
+  const serviceId = serviceKey(service);
   const nowMinute = serviceMinuteNow(now);
+  // Only "Right now" looks at the clock, to leave out trains that have finished for the day.
+  const liveMinute = serviceOverride ? undefined : nowMinute;
   const [replayDay, setReplayDay] = useState(nowService.day);
   const [clock] = useState(
     () =>
@@ -157,16 +166,16 @@ export function App() {
   useEffect(() => setFollowId(null), [replayDay]);
   const reachA = useMemo(() => {
     if (mode === 'reach' && origin) {
-      return computeReach(net, service, origin, allowance, firstWait);
+      return computeReach(net, service, origin, allowance, firstWait, liveMinute);
     }
     return null;
-  }, [mode, origin, service, allowance, firstWait]);
+  }, [mode, origin, service, allowance, firstWait, liveMinute]);
   const reachB = useMemo(() => {
     if (mode === 'reach' && origin && origin2 && origin2 !== origin) {
-      return computeReach(net, service, origin2, allowance, firstWait);
+      return computeReach(net, service, origin2, allowance, firstWait, liveMinute);
     }
     return null;
-  }, [mode, origin, origin2, service, allowance, firstWait]);
+  }, [mode, origin, origin2, service, allowance, firstWait, liveMinute]);
   const meeting = useMemo(() => {
     if (reachA && reachB) {
       return meetingPoints(reachA, reachB);
@@ -229,13 +238,13 @@ export function App() {
   }, [theme]);
   const result = useMemo(() => {
     if (from && to) {
-      return planTrips(net, service, from, to);
+      return planTrips(net, service, from, to, liveMinute);
     }
     return null;
-  }, [from, to, service]);
+  }, [from, to, service, liveMinute]);
   const itineraries = result?.status === 'ok' ? result.itineraries : [];
   const itinerary = itineraries.length ? itineraries[Math.min(optionIndex, itineraries.length - 1)] : null;
-  useEffect(() => setOptionIndex(0), [from, to, service]);
+  useEffect(() => setOptionIndex(0), [from, to, serviceId]);
   const alertPayload =
     state.kind === 'ready' ? state.data : state.kind === 'error' ? state.lastGood?.data : undefined;
   const taggedAll = useMemo(() => {
@@ -514,7 +523,11 @@ export function App() {
         if (result.status === 'same-station') {
           announce('Start and destination are the same station.');
         } else if (result.status === 'no-route') {
-          announce(`No route between ${nameOf(from)} and ${nameOf(to)} in the selected service.`);
+          announce(
+            result.ended
+              ? `No regular train still to come connects ${nameOf(from)} and ${nameOf(to)} in this service.`
+              : `No route between ${nameOf(from)} and ${nameOf(to)} in the selected service.`,
+          );
         }
       }
     }
@@ -702,7 +715,7 @@ export function App() {
         from={from}
         to={to}
         result={result}
-        index={optionIndex}
+        index={Math.min(optionIndex, Math.max(0, itineraries.length - 1))}
         onIndex={setOptionIndex}
         onStation={(event) => selectStation(event)}
         onService={setServiceOverride}

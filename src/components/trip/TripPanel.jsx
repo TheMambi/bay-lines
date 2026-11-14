@@ -4,7 +4,7 @@ import { LineChip } from '../LineChip';
 import { formatFare, plural } from '../../lib/format';
 import { DAYS, PERIODS } from '../../lib/network';
 import { planTrips } from '../../lib/routing';
-import { DAY_LABELS, PERIOD_LABELS, describeService } from '../../lib/time';
+import { DAY_LABELS, PERIOD_LABELS, describeService, formatMinute } from '../../lib/time';
 import { TRACK_FEATURES } from '../../map/schematic';
 
 const stationName = (net, id) => net.stationById.get(id).name;
@@ -13,6 +13,13 @@ function describeItinerary(net, itinerary) {
   const names = itinerary.legs.map((leg) => net.lineById.get(leg.lineId).name);
   const lineText = names.length === 1 ? `${names[0]} line` : names.map((name) => `${name}`).join(' → ');
   return `${itinerary.transfers === 0 ? 'Direct' : plural(itinerary.transfers, 'transfer')} · ${lineText} · about ${itinerary.rideMinutes} min riding`;
+}
+
+// `lastTrain.gone` is false when the train has not left yet but leaves before the rider could arrive.
+function lastTrainText(net, lastTrain) {
+  const train = `The last ${net.lineById.get(lastTrain.lineId).name} line train toward ${stationName(net, lastTrain.toward)}`;
+  const where = `${stationName(net, lastTrain.stationId)} at ${formatMinute(lastTrain.minute)}`;
+  return lastTrain.gone ? `${train} left ${where}` : `${train} leaves ${where}, before you could get there`;
 }
 
 export function TripPanel(props) {
@@ -79,6 +86,12 @@ export function TripPanel(props) {
               ))}
             </div>
           )}
+          {result.lastTrain && (
+            <p className="notice notice-info" role="note">
+              <Icon name="info" size={18} />
+              <span>{lastTrainText(net, result.lastTrain)}, so this suggestion uses other trains.</span>
+            </p>
+          )}
           <ItineraryDetails
             {...props}
             itinerary={result.itineraries[Math.min(props.index, result.itineraries.length - 1)]}
@@ -126,7 +139,7 @@ export function TripPanel(props) {
   );
 }
 
-function NoRouteNotice({ net, from, to, service, onService }) {
+function NoRouteNotice({ net, from, to, service, result, onService }) {
   const connectedIn = [];
   for (const day of DAYS) {
     for (const period of PERIODS) {
@@ -140,14 +153,22 @@ function NoRouteNotice({ net, from, to, service, onService }) {
       <Icon name="alert" size={18} />
       <div>
         <p>
-          {'No route between '}
+          {result.ended ? 'No regular train still to come connects ' : 'No route between '}
           {stationName(net, from)}
           {' and '}
           {stationName(net, to)}
           {' in '}
           {describeService(service).toLowerCase()}
           {' service.'}
+          {result.lastTrain && ` ${lastTrainText(net, result.lastTrain)}.`}
         </p>
+        {result.ended && (
+          <p>
+            A few of the day’s first and last trains run outside the regular pattern. Check{' '}
+            <ExternalLink href={net.data.meta.agency.url}>bart.gov</ExternalLink>
+            {' for those.'}
+          </p>
+        )}
         {connectedIn.length > 0 ? (
           <>
             <p>They are connected in:</p>
@@ -204,6 +225,10 @@ function ItineraryDetails({ net, itinerary, from, to, onStation, feature }) {
             net={net}
             leg={leg}
             first={index === 0}
+            oacChange={
+              index > 0 &&
+              (leg.notes.includes('oac-transfer') || itinerary.legs[index - 1].notes.includes('oac-transfer'))
+            }
             onStation={onStation}
             feature={feature}
           />
@@ -259,13 +284,13 @@ function ItineraryDetails({ net, itinerary, from, to, onStation, feature }) {
   );
 }
 
-function LegStep({ net, leg, first, onStation, feature }) {
+function LegStep({ net, leg, first, oacChange, onStation, feature }) {
   const line = net.lineById.get(leg.lineId);
   const between = leg.stops.slice(1, -1);
   const hops = leg.stops.length - 1;
-  const oacTransfer = net.data.transferTimes.find(
-    (transferTime) => transferTime.stationId === leg.from && leg.notes.includes('oac-transfer'),
-  );
+  // Shown on the step where the rider changes to or from the connector, whichever leg comes first.
+  const oacTransfer =
+    oacChange && net.data.transferTimes.find((transferTime) => transferTime.stationId === leg.from);
   return (
     <li className="step" style={{ '--rail': line.color }}>
       <span className="step-dot" style={{ background: line.color }} aria-hidden="true">
@@ -326,7 +351,7 @@ function LegStep({ net, leg, first, onStation, feature }) {
             {feature.note} <ExternalLink href={feature.source}>Source</ExternalLink>
           </p>
         )}
-        {leg.notes.includes('oac-transfer') && oacTransfer && (
+        {oacTransfer && (
           <p className="fine">
             {'Allow at least '}
             {Math.round(oacTransfer.minSeconds / 60)}

@@ -56,7 +56,9 @@ export function AboutContent({ net, geographyAttribution }) {
           }
           {8}
           {' minutes '}
-          <em>only to rank options</em>; that number is never shown as a wait.
+          <em>only to rank options</em>; that number is never shown as a wait. With “Right now” chosen, the
+          planner and Reach leave out a train once its last run of the day has left the stop where you would
+          board. They still cannot tell you when the next train comes.
         </li>
         <li>
           <strong>Riding time</strong>

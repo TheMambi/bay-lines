@@ -62,6 +62,12 @@ export function assertNetwork(data) {
     if (!isNumberList(pattern.arr, stops) || !isNumberList(pattern.dep, stops)) {
       fail(`pattern ${pattern.id} needs one arrival and one departure minute for each stop`);
     }
+    for (const day of Object.keys(pattern.service)) {
+      const departures = pattern.departures?.[day];
+      if (!Array.isArray(departures) || departures.length === 0 || !departures.every(Number.isFinite)) {
+        fail(`pattern ${pattern.id} runs on ${day} but lists no departure minutes for that day`);
+      }
+    }
   }
   const order = data.fares?.stationOrder ?? [];
   if (

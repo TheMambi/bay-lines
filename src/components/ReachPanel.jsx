@@ -330,6 +330,12 @@ export function ReachPanel({
               : 'Assumes your first train is already there.'}
             {' Leaves out the walk to the station and delays.'}
           </p>
+          {usingNow && reach.size < net.stations.length && (
+            <p className="fine">
+              {plural(net.stations.length - reach.size, 'station')}
+              {' cannot be reached right now: the last regular trains there in this service have gone.'}
+            </p>
+          )}
           <h3 className="sr-only">Colour key</h3>
           <ul className="reach-legend" aria-label="Colour key, minutes from the start">
             {legend.map((band) => (

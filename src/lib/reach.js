@@ -1,16 +1,17 @@
-import { buildServiceGraph, legsFromPath, shortestPaths } from './graph';
+import { buildServiceGraph, legsFromPath, sameWhileUnchanged, shortestPaths } from './graph';
 import { buildItinerary } from './routing';
 
 // Each station gets the route the trip planner would suggest. The transfer and first-wait minutes are
 // the rider's own assumptions, so they are added to that route's time and never used to choose it:
 // as search costs they make a change free at "none", and a one-seat ride is listed as a dozen changes.
-export function computeReach(net, service, originId, transferMinutes = 5, firstWaitMinutes = 0) {
+// `nowMinute` is given for the "Right now" service only, and leaves out trains that have finished.
+export function computeReach(net, service, originId, transferMinutes = 5, firstWaitMinutes = 0, nowMinute) {
   const result = new Map();
   if (!net.stationById.has(originId)) {
     return result;
   }
   const graph = buildServiceGraph(net, service);
-  const { dist, prev } = shortestPaths(graph, originId);
+  const { dist, prev } = shortestPaths(graph, originId, undefined, nowMinute);
   net.stations.forEach((station, index) => {
     if (!isFinite(dist[index])) {
       return;
@@ -19,7 +20,8 @@ export function computeReach(net, service, originId, transferMinutes = 5, firstW
       result.set(station.id, { minutes: 0, rideMinutes: 0, transfers: 0, lineIds: [] });
       return;
     }
-    const itinerary = buildItinerary(net, service, { legs: legsFromPath(graph, prev, station.id) });
+    const legs = legsFromPath(graph, prev, station.id);
+    const itinerary = buildItinerary(net, service, { legs }, nowMinute);
     result.set(station.id, {
       minutes: Math.round(
         itinerary.rideMinutes +
@@ -31,7 +33,7 @@ export function computeReach(net, service, originId, transferMinutes = 5, firstW
       lineIds: itinerary.legs.map((leg) => leg.lineId),
     });
   });
-  return result;
+  return nowMinute == null ? result : sameWhileUnchanged(`reach|${originId}`, result);
 }
 
 export function reachBand(minutes, horizon) {

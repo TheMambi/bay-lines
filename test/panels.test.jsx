@@ -1,8 +1,10 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { ReachPanel } from '../src/components/ReachPanel';
+import { TripPanel } from '../src/components/trip/TripPanel';
 import { net } from '../src/lib/network';
 import { computeReach } from '../src/lib/reach';
+import { planTrips } from '../src/lib/routing';
 
 const WEEKDAY = { day: 'weekday', period: 'day' };
 const noop = () => {};
@@ -44,5 +46,58 @@ describe('Reach panel', () => {
     expect(html).not.toContain('Nothing chosen yet');
     expect(html).toContain('Within 30 minutes');
     expect(html).toContain('Plan trip from Embarcadero to Montgomery Street');
+  });
+});
+
+const tripPanel = (from, to, service = WEEKDAY, nowMinute) =>
+  renderToStaticMarkup(
+    <TripPanel
+      net={net}
+      service={service}
+      from={from}
+      to={to}
+      result={planTrips(net, service, from, to, nowMinute)}
+      index={0}
+      onIndex={noop}
+      onStation={noop}
+      onService={noop}
+      onSwap={noop}
+      onClear={noop}
+      onFit={noop}
+      systemAlerts={0}
+      taggedAlerts={[]}
+      onOpenAlerts={noop}
+      alertsUnavailable={false}
+    />,
+  );
+
+describe('Trip panel', () => {
+  it('shows the Oakland Airport Connector transfer time on trips to the airport and from it', () => {
+    for (const [from, to] of [
+      ['EMBR', 'OAKL'],
+      ['OAKL', 'EMBR'],
+    ]) {
+      const html = tripPanel(from, to);
+      expect(html, `${from} to ${to}`).toContain('Allow at least 4 minutes');
+      expect(html.match(/Allow at least/g), `${from} to ${to}`).toHaveLength(1);
+      expect(html.indexOf('Change at')).toBeLessThan(html.indexOf('Allow at least'));
+    }
+  });
+
+  it('says in plain words when the last train of a line has gone', () => {
+    const evening = tripPanel('DALY', 'BERY', WEEKDAY, 20 * 60);
+    expect(evening).toContain(
+      'The last Green line train toward Berryessa / North San Jose left Daly City at 7:20 PM, so this suggestion uses other trains.',
+    );
+    expect(tripPanel('DALY', 'BERY', WEEKDAY, 12 * 60)).not.toContain('The last');
+    expect(tripPanel('DALY', 'BERY')).not.toContain('The last');
+  });
+
+  it('says when no regular train is left, and why', () => {
+    const html = tripPanel('RICH', 'MLBR', WEEKDAY, 20 * 60);
+    expect(html).toContain('No regular train still to come connects Richmond and Millbrae');
+    expect(html).toContain('The last Red line train toward Millbrae');
+    expect(html).toContain('left Richmond at 7:31 PM.');
+    expect(html).toContain('They are connected in:');
   });
 });

@@ -6,6 +6,18 @@ const BOARDING_COST = 8;
 
 const NO_EXCLUSIONS = { lines: new Set(), transferStations: new Set() };
 
+const lastDepartures = new WeakMap();
+
+// The minute of the service day at which the last train of a stopping pattern leaves one of its stops.
+export function lastTrainAt(pattern, stopIndex, day) {
+  let byDay = lastDepartures.get(pattern);
+  if (!byDay) {
+    lastDepartures.set(pattern, (byDay = {}));
+  }
+  byDay[day] ??= Math.max(...pattern.departures[day]);
+  return byDay[day] + pattern.dep[stopIndex];
+}
+
 // One node per station and one node per stop of each stopping pattern, so a train only goes where it
 // stops. The trip planner and Reach both search this graph, which is why they pick the same routes.
 export function buildServiceGraph(net, service, exclude = NO_EXCLUSIONS, fromId) {
@@ -27,16 +39,24 @@ export function buildServiceGraph(net, service, exclude = NO_EXCLUSIONS, fromId)
       const node = patternOffset[patternIndex] + stopIndex;
       const stationNode = stationIndex.get(stationId);
       if (stopIndex < lastStop && (stationId === fromId || !exclude.transferStations.has(stationId))) {
-        arcs[stationNode].push({ to: node, cost: BOARDING_COST + tieBreak });
-      }
-      if (stopIndex < lastStop) {
-        arcs[node].push({
-          to: node + 1,
-          cost: Math.max(0.5, pattern.dep[stopIndex + 1] - pattern.dep[stopIndex]),
+        arcs[stationNode].push({
+          to: node,
+          cost: BOARDING_COST + tieBreak,
+          minutes: 0,
+          lastTrain: lastTrainAt(pattern, stopIndex, service.day),
         });
       }
+      if (stopIndex < lastStop) {
+        const ride = pattern.dep[stopIndex + 1] - pattern.dep[stopIndex];
+        arcs[node].push({ to: node + 1, cost: Math.max(0.5, ride), minutes: ride });
+      }
       if (stopIndex > 0) {
-        arcs[node].push({ to: stationNode, cost: 0 });
+        // A pattern node stands for leaving the stop, so getting off there is earlier by the pause.
+        arcs[node].push({
+          to: stationNode,
+          cost: 0,
+          minutes: pattern.arr[stopIndex] - pattern.dep[stopIndex],
+        });
       }
     });
   });
@@ -44,11 +64,14 @@ export function buildServiceGraph(net, service, exclude = NO_EXCLUSIONS, fromId)
 }
 
 // Dijkstra from one station. With a target it stops as soon as the target is settled.
-export function shortestPaths(graph, sourceId, targetId) {
+// `nowMinute` is given for the "Right now" service only. A train then cannot be boarded at a stop its
+// last run leaves before the rider could be there: now plus the riding so far, with no waiting counted.
+export function shortestPaths(graph, sourceId, targetId, nowMinute) {
   const source = graph.stationIndex.get(sourceId);
   const target = graph.stationIndex.get(targetId);
   const dist = Array(graph.arcs.length).fill(Infinity);
   const prev = Array(graph.arcs.length).fill(-1);
+  const minutes = Array(graph.arcs.length).fill(0);
   const queue = new MinHeap();
   dist[source] = 0;
   queue.push(0, source);
@@ -59,10 +82,13 @@ export function shortestPaths(graph, sourceId, targetId) {
         break;
       }
       for (const arc of graph.arcs[node]) {
+        // Only boarding arcs carry `lastTrain`.
+        const missed = nowMinute != null && nowMinute + minutes[node] > arc.lastTrain;
         const candidate = cost + arc.cost;
-        if (candidate < dist[arc.to] - 1e-12) {
+        if (!missed && candidate < dist[arc.to] - 1e-12) {
           dist[arc.to] = candidate;
           prev[arc.to] = node;
+          minutes[arc.to] = minutes[node] + arc.minutes;
           queue.push(candidate, arc.to);
         }
       }
@@ -118,4 +144,19 @@ export function legsFromPath(graph, prev, stationId) {
     }
   }
   return legs;
+}
+
+const lastAnswers = new Map();
+
+// A "Right now" answer is worked out again every minute. While it reads the same as the one before,
+// the caller gets the earlier object back, so React neither redraws the map nor announces the route
+// again. One answer is kept for each slot.
+export function sameWhileUnchanged(slot, answer) {
+  const signature = JSON.stringify(answer instanceof Map ? [...answer] : answer);
+  const last = lastAnswers.get(slot);
+  if (last?.signature === signature) {
+    return last.answer;
+  }
+  lastAnswers.set(slot, { signature, answer });
+  return answer;
 }
