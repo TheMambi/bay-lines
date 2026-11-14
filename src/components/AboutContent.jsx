@@ -1,6 +1,8 @@
 import { ExternalLink } from './ExternalLink';
 import { formatDate } from '../lib/format';
 
+export const SOURCE_URL = 'https://github.com/TheMambi/bay-lines';
+
 export function AboutContent({ net, geographyAttribution, today }) {
   const meta = net.data.meta;
   const feedExpired = meta.gtfs.feedEndDate < today;
@@ -181,12 +183,24 @@ export function AboutContent({ net, geographyAttribution, today }) {
       <h3>Credits and licences</h3>
       <ul>
         <li>
+          Bay Lines, copyright © 2026 TheMambi. It is free software under the{' '}
+          <ExternalLink href="https://www.gnu.org/licenses/agpl-3.0.html">
+            GNU Affero General Public License
+          </ExternalLink>
+          , version 3 or later, and comes with no warranty. Source code:{' '}
+          <ExternalLink href={SOURCE_URL}>github.com/TheMambi/bay-lines</ExternalLink>.
+        </li>
+        <li>
           Transit data © Bay Area Rapid Transit, used under the{' '}
           <ExternalLink href="https://www.bart.gov/dla">BART Developer License Agreement</ExternalLink>. BART
           and its marks belong to BART.
         </li>
         <li>Land outline from Natural Earth (public domain).</li>
         <li>Typeface: Atkinson Hyperlegible Next, SIL Open Font License 1.1.</li>
+        <li>
+          Built with React and other open-source software. Their copyright and licence notices are in{' '}
+          <ExternalLink href="/third-party-licenses.md">third-party licences</ExternalLink>.
+        </li>
       </ul>
     </div>
   );

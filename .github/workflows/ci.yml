@@ -4,6 +4,9 @@ on:
   push:
     branches: [dev, main]
   pull_request:
+  # Weekly, so an advisory published between pushes still fails the audit step.
+  schedule:
+    - cron: '17 6 * * 1'
 
 # The jobs only read the code. No job gets a token that can write to the repository.
 permissions:

@@ -28,4 +28,10 @@ const localAlertsApi = () => ({
   },
 });
 
-export default defineConfig({ plugins: [react(), localAlertsApi()], test: { environment: 'node' } });
+export default defineConfig({
+  plugins: [react(), localAlertsApi()],
+  // The bundle strips the licence comments of the libraries it contains, so their notices
+  // ship beside it as a file the About text links to.
+  build: { license: { fileName: 'third-party-licenses.md' } },
+  test: { environment: 'node' },
+});

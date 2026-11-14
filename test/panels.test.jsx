@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { AboutContent } from '../src/components/AboutContent';
+import { AboutContent, SOURCE_URL } from '../src/components/AboutContent';
 import { ReachPanel } from '../src/components/ReachPanel';
 import { TripPanel } from '../src/components/trip/TripPanel';
 import { net } from '../src/lib/network';
@@ -114,5 +114,14 @@ describe('About text', () => {
     const html = about('2027-02-01');
     expect(html).toContain('This timetable ended on Jan 10, 2027.');
     expect(html).toContain('before you travel');
+  });
+
+  it('shows the app’s own copyright, licence and a link to its source', () => {
+    const html = about('2026-11-13');
+    expect(html).toContain('copyright © 2026 TheMambi');
+    expect(html).toContain('GNU Affero General Public License');
+    expect(html).toContain('no warranty');
+    expect(html).toContain(`href="${SOURCE_URL}"`);
+    expect(html).toContain('href="/third-party-licenses.md"');
   });
 });

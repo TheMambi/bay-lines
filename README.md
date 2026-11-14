@@ -68,7 +68,7 @@ docs/                README screenshots, known pitfalls (PITFALLS.md)
 
 ## Security
 
-The site sends a strict Content-Security-Policy, the alerts function accepts no caller input and caps what it reads from BART, and CI runs `npm audit` on every push. See [SECURITY.md](SECURITY.md) for the details and for how to report a problem privately.
+The site sends a strict Content-Security-Policy, the alerts function accepts no caller input and caps what it reads from BART, and CI runs `npm audit` on every push to `dev`, on every pull request and once a week. See [SECURITY.md](SECURITY.md) for the details and for how to report a problem privately.
 
 ## Data and licences
 
@@ -80,6 +80,17 @@ The site sends a strict Content-Security-Policy, the alerts function accepts no 
 
 Copyright (C) 2026 TheMambi. This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. See `LICENSE` for the full text.
 
+Versions up to and including commit `e177c65` (November 10, 2026) were published under the MIT licence. Commit `8da8656` and everything after it is AGPL-3.0-or-later. The running app shows its copyright, licence and a link to this repository in its About text, and each build writes the notices of the libraries it bundles to `third-party-licenses.md`.
+
 The AGPL licence covers the source code only. Three generated data files are not covered by it: `src/data/network.json` and `api/_lib/stop-parents.js` are derived from BART's GTFS feed and used under the BART Developer License Agreement, and `src/data/geography.json` is derived from Natural Earth data, which is public domain.
 
 The script that builds those three files is not in this repository yet, so they cannot be rebuilt from a fresh clone.
+
+### BART's terms
+
+Terms checked on: not yet checked. Nothing in this repository records that the points below were compared with BART's current pages. Each needs an answer and a date here.
+
+1. Does https://www.bart.gov/dla still lead to the current BART Developer License Agreement?
+2. Does the agreement ask for attribution or disclaimer wording beyond what the About text shows, and does it allow derived data (`src/data/network.json`, `api/_lib/stop-parents.js`) to be published in a public repository?
+3. Is https://api.bart.gov/gtfsrt/alerts.aspx the documented GTFS-Realtime alerts address, and does BART state a limit on how often it may be read? The alerts function reads it at most once every 30 seconds per running copy and sends Node's default user agent.
+4. What is BART's rule for using the plain-text name "BART" in an unofficial app?
