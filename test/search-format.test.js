@@ -11,6 +11,15 @@ describe('searchStations', () => {
     expect(searchStations(net, 'ferry building')[0].station.id).toBe('EMBR');
   });
 
+  it('matches everyday phrasings that mix a name, a nickname and filler words', () => {
+    expect(searchStations(net, 'sfo airport')[0].station.id).toBe('SFIA');
+    expect(searchStations(net, 'embarcadero station')[0].station.id).toBe('EMBR');
+    expect(searchStations(net, 'millbrae caltrain')[0].station.id).toBe('MLBR');
+    expect(searchStations(net, 'mac arthur')[0].station.id).toBe('MCAR');
+    expect(searchStations(net, 'bayfair')[0].station.id).toBe('BAYF');
+    expect(searchStations(net, 'bart station')).toEqual([]);
+  });
+
   it('returns nothing for empty or unmatched input', () => {
     expect(searchStations(net, '   ')).toEqual([]);
     expect(searchStations(net, 'zzzz')).toEqual([]);

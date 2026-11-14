@@ -26,7 +26,12 @@ const STATION_ALIASES = {
   SSAN: ['South SF'],
   DALY: ['Daly'],
   MLBR: ['Caltrain'],
+  BAYF: ['Bayfair'],
+  MCAR: ['Mac Arthur'],
 };
+
+// Words people add that are part of no station name.
+const FILLER_WORDS = new Set(['station', 'stn', 'bart']);
 
 const normalizeName = (text) =>
   text
@@ -39,11 +44,13 @@ const normalizeName = (text) =>
     .trim();
 
 export function searchStations(net, query, limit = 8) {
-  const q = normalizeName(query);
+  const words = normalizeName(query)
+    .split(' ')
+    .filter((word) => word && !FILLER_WORDS.has(word));
+  const q = words.join(' ');
   if (!q) {
     return [];
   }
-  const words = q.split(' ');
   const matches = [];
   for (const station of net.stations) {
     const name = normalizeName(station.name);
@@ -74,6 +81,15 @@ export function searchStations(net, query, limit = 8) {
       if (aliasScore > score) {
         score = aliasScore;
         matchedOn = alias;
+      }
+    }
+    if (score === 0) {
+      // Last resort: every word starts some word of the name, a nickname or the code ("sfo airport").
+      const known = [station.name, station.id, ...(STATION_ALIASES[station.id] ?? [])].flatMap((text) =>
+        normalizeName(text).split(' '),
+      );
+      if (words.every((word) => known.some((part) => part.startsWith(word)))) {
+        score = 40 - name.length * 0.1;
       }
     }
     if (score > 0) {

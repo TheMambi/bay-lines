@@ -29,6 +29,12 @@ import { TransitMap } from './map/TransitMap';
 
 const MODES = ['explore', 'trip', 'reach', 'replay', 'play'];
 
+const DEFAULT_HORIZON = 30;
+
+const DEFAULT_ALLOWANCE = 5;
+
+const startMode = (link) => link.mode ?? (link.from || link.to ? 'trip' : 'explore');
+
 function readHashState() {
   const state = {
     from: null,
@@ -101,13 +107,13 @@ export function App() {
   const searchRef = useRef(null);
   const initial = useMemo(readHashState, []);
   const [geography, setGeography] = useState(null);
-  const [mode, setMode] = useState(initial.mode ?? (initial.from || initial.to ? 'trip' : 'explore'));
+  const [mode, setMode] = useState(startMode(initial));
   const [origin, setOrigin] = useState(initial.origin);
   const [origin2, setOrigin2] = useState(initial.origin2);
   const [firstWait, setFirstWait] = useState(initial.first ?? 0);
   const [lineFilter, setLineFilter] = useState(null);
-  const [horizon, setHorizon] = useState(initial.within ?? 30);
-  const [allowance, setAllowance] = useState(initial.wait ?? 5);
+  const [horizon, setHorizon] = useState(initial.within ?? DEFAULT_HORIZON);
+  const [allowance, setAllowance] = useState(initial.wait ?? DEFAULT_ALLOWANCE);
   const [followId, setFollowId] = useState(null);
   const [gameView, setGameView] = useState(EMPTY_GAME);
   const pickRef = useRef(null);
@@ -575,6 +581,28 @@ export function App() {
       // Some embedded browsers block history updates; deep links are a nicety.
     }
   }, [from, to, selected, highlight, serviceOverride, mode, origin, origin2, horizon, allowance, firstWait]);
+  useEffect(() => {
+    // The app's own address updates use replaceState, which fires no hashchange. This only runs for a
+    // link pasted or followed in a tab that already shows the app.
+    const onHashChange = () => {
+      const link = readHashState();
+      setMode(startMode(link));
+      setFrom(link.from);
+      setTo(link.to);
+      setSelected(link.station);
+      setHighlight(link.line);
+      setServiceOverride(link.service);
+      setOrigin(link.origin);
+      setOrigin2(link.origin2);
+      setHorizon(link.within ?? DEFAULT_HORIZON);
+      setAllowance(link.wait ?? DEFAULT_ALLOWANCE);
+      setFirstWait(link.first ?? 0);
+      setPickMode(null);
+      setSnap((prev) => (prev === 'peek' ? 'half' : prev));
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
   useEffect(() => {
     const onKeyDown = (event) => {
       const target = event.target;
