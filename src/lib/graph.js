@@ -2,7 +2,7 @@ import { MinHeap } from './minHeap';
 
 // Charged each time a rider gets on a train. It only ranks routes: a change has to save more riding
 // time than this to be worth making. It is never added to a time shown to the rider.
-const BOARDING_COST = 8;
+export const BOARDING_COST = 8;
 
 const NO_EXCLUSIONS = { lines: new Set(), transferStations: new Set() };
 

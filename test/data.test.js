@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { STOP_PARENTS } from '../api/_lib/stop-parents.js';
 import { assertNetwork, net } from '../src/lib/network';
-import { pacificDate } from '../src/lib/time';
+import { EVENING_START_MINUTE, TIME_ZONE, pacificDate } from '../src/lib/time';
 import { buildGeometry } from '../src/map/geometry';
 import { STATION_LAYOUT } from '../src/map/schematic';
 
@@ -36,6 +36,14 @@ describe('network.json', () => {
         expect(row.every(Number.isFinite), category.id).toBe(true);
       }
     }
+  });
+});
+
+describe('constants that repeat the schedule data', () => {
+  it('uses the agency’s time zone and the data’s start of evening service', () => {
+    const [hours, minutes] = net.data.meta.eveningStartsAt.split(':').map(Number);
+    expect(TIME_ZONE).toBe(net.data.meta.agency.timezone);
+    expect(EVENING_START_MINUTE).toBe(hours * 60 + minutes);
   });
 });
 

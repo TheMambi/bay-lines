@@ -35,7 +35,7 @@ import {
   TrackFeatures,
 } from './layers';
 import { measureText } from './measureText';
-import { AREA_LABELS, CASING_WIDTH, LANE_GAP, LANE_WIDTH, STATION_LAYOUT } from './schematic';
+import { AREA_LABELS, CASING_WIDTH, GRID, LANE_GAP, LANE_WIDTH, STATION_LAYOUT } from './schematic';
 
 const FIT_PADDING = { left: 190, right: 110, top: 70, bottom: 80 };
 
@@ -575,7 +575,7 @@ export const TransitMap = memo(
         const upper = label.text.toUpperCase();
         const width = measureText(upper, fontSize, 600, LABEL_FONT) + upper.length * 0.14 * fontSize;
         const rad = ((label.rotate ?? 0) * Math.PI) / 180;
-        const center = toScreen({ x: label.x * 11, y: label.y * 11 });
+        const center = toScreen({ x: label.x * GRID, y: label.y * GRID });
         const hx = (Math.cos(rad) * width) / 2;
         const hy = (Math.sin(rad) * width) / 2;
         const seg = {
@@ -836,7 +836,7 @@ export const TransitMap = memo(
                   tabIndex={station.id === tabStop ? 0 : -1}
                   aria-label={
                     hideNames && !marks?.has(station.id)
-                      ? `Station on the ${linesLabel.get(station.id)} lines.`
+                      ? `Station on the ${linesLabel.get(station.id)} ${net.linesAt(station.id).length === 1 ? 'line' : 'lines'}.`
                       : `${station.name}. Lines: ${linesLabel.get(station.id)}.${station.id === from ? ' Starting station.' : ''}${station.id === to ? ' Destination.' : ''}${station.id === selected ? ' Selected.' : ''}${reachDescription(station.id)}`
                   }
                   aria-pressed={station.id === selected}

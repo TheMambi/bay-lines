@@ -108,7 +108,6 @@ export function buildItinerary(net, service, path, nowMinute) {
       minutes,
       alsoWorks,
       changeOptions: changeOptions[legIndex],
-      window: best.service[service.day]?.[service.period],
       notes,
     };
   });

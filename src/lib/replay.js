@@ -1,3 +1,5 @@
+import { SERVICE_START_MINUTE } from './time';
+
 export const SERVICE_END_MINUTE = 1560;
 
 export function scheduledTrains(net, day) {
@@ -109,7 +111,7 @@ export function countByLine(positions) {
   return counts;
 }
 
-export function activityCurve(trains, step = 5, from = 240, to = SERVICE_END_MINUTE) {
+export function activityCurve(trains, step = 5, from = SERVICE_START_MINUTE, to = SERVICE_END_MINUTE) {
   const points = [];
   for (let minute = from; minute <= to; minute += step) {
     let count = 0;
@@ -127,9 +129,9 @@ export function activityCurve(trains, step = 5, from = 240, to = SERVICE_END_MIN
 }
 
 export const SPEEDS = [
-  { perSecond: 1, label: '1 min/s' },
-  { perSecond: 3, label: '3 min/s' },
-  { perSecond: 10, label: '10 min/s' },
+  { perSecond: 1, label: '1 minute per second' },
+  { perSecond: 3, label: '3 minutes per second' },
+  { perSecond: 10, label: '10 minutes per second' },
 ];
 
 export class ReplayClock {
@@ -142,7 +144,7 @@ export class ReplayClock {
   last = 0;
   acc = 0;
   constructor(minute, stepped = false) {
-    this.minute = Math.min(SERVICE_END_MINUTE, Math.max(240, minute));
+    this.minute = Math.min(SERVICE_END_MINUTE, Math.max(SERVICE_START_MINUTE, minute));
     this.stepped = stepped;
   }
   subscribe = (listener) => {
@@ -157,7 +159,7 @@ export class ReplayClock {
     }
   }
   set(minute) {
-    this.minute = Math.min(SERVICE_END_MINUTE, Math.max(240, minute));
+    this.minute = Math.min(SERVICE_END_MINUTE, Math.max(SERVICE_START_MINUTE, minute));
     this.emit();
   }
   setSpeed(perSecond) {
@@ -187,11 +189,6 @@ export class ReplayClock {
       this.play();
     }
   }
-  destroy() {
-    this.playing = false;
-    cancelAnimationFrame(this.raf);
-    this.listeners.clear();
-  }
   loop = (now) => {
     if (!this.playing) {
       return;
@@ -211,8 +208,8 @@ export class ReplayClock {
     }
     if (advance > 0) {
       let next = this.minute + advance;
-      if (next > 1560) {
-        next = 240 + (next - SERVICE_END_MINUTE);
+      if (next > SERVICE_END_MINUTE) {
+        next = SERVICE_START_MINUTE + (next - SERVICE_END_MINUTE);
       }
       this.minute = next;
       this.emit();

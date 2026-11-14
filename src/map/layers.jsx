@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { AREA_LABELS, CASING_WIDTH, LANE_WIDTH, TRACK_FEATURES } from './schematic';
+import { AREA_LABELS, CASING_WIDTH, GRID, LANE_WIDTH, TRACK_FEATURES } from './schematic';
 
 export const GeographyLayer = memo(function ({ geography }) {
   if (geography) {
@@ -127,7 +127,7 @@ export const AreaLabels = memo(function ({ scale, hidden }) {
         <text
           key={label.text}
           className={`area-label area-${label.kind}${hidden?.has(label.text) ? ' is-hidden' : ''}`}
-          transform={`translate(${label.x * 11} ${label.y * 11}) rotate(${label.rotate ?? 0}) scale(${1 / Math.max(scale, 0.6)})`}
+          transform={`translate(${label.x * GRID} ${label.y * GRID}) rotate(${label.rotate ?? 0}) scale(${1 / Math.max(scale, 0.6)})`}
           textAnchor="middle"
         >
           {label.text}

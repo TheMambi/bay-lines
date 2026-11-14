@@ -2,6 +2,12 @@ import { planTrips } from './routing';
 
 export const WEEKDAY_DAY = { day: 'weekday', period: 'day' };
 
+export const SPRINT_ROUNDS = 10;
+export const SPRINT_SECONDS = 12;
+export const GUESS_ROUNDS = 8;
+// The most one round of either game can score. sprintPoints (40 + 60) and guessPoints top out here.
+export const ROUND_POINTS = 100;
+
 function seededRandom(seed) {
   let state = seed >>> 0;
   return () => {
@@ -35,7 +41,7 @@ function shuffle(items, random) {
   return out;
 }
 
-export function pickStations(net, seed, count = 10) {
+export function pickStations(net, seed, count = SPRINT_ROUNDS) {
   return shuffle(
     net.stations.map((station) => station.id),
     seededRandom(seed),
@@ -46,7 +52,7 @@ export function sprintPoints(correct, seconds) {
   if (!correct) {
     return 0;
   }
-  const speed = Math.max(0, Math.min(1, 1 - seconds / 12));
+  const speed = Math.max(0, Math.min(1, 1 - seconds / SPRINT_SECONDS));
   return Math.round(40 + 60 * speed);
 }
 
@@ -58,7 +64,7 @@ export function stopsBetween(net, picked, toId) {
   return null;
 }
 
-export function pickTrips(net, seed, count = 8) {
+export function pickTrips(net, seed, count = GUESS_ROUNDS) {
   const random = seededRandom(seed);
   const ids = net.stations.map((station) => station.id);
   const trips = [];
@@ -84,7 +90,7 @@ export function pickTrips(net, seed, count = 8) {
 }
 
 export function guessPoints(guess, minutes) {
-  return Math.max(0, 100 - 5 * Math.abs(Math.round(guess) - minutes));
+  return Math.max(0, ROUND_POINTS - 5 * Math.abs(Math.round(guess) - minutes));
 }
 
 export function guessVerdict(guess, minutes) {

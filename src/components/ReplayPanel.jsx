@@ -12,7 +12,7 @@ import {
   trainPosition,
   trainsAt,
 } from '../lib/replay';
-import { DAY_LABELS, formatMinute } from '../lib/time';
+import { DAY_LABELS, SERVICE_START_MINUTE, formatMinute } from '../lib/time';
 
 const JUMP_TIMES = [
   { label: 'First trains', at: 300 },
@@ -73,13 +73,13 @@ export function ReplayPanel({
     }
     return { id: followedPattern.stations[nextIndex], at: followed.start + followedPattern.arr[nextIndex] };
   })();
-  const scrubX = (m) => ((m - 240) / (SERVICE_END_MINUTE - 240)) * SCRUB_SIZE.w;
+  const scrubX = (m) =>
+    ((m - SERVICE_START_MINUTE) / (SERVICE_END_MINUTE - SERVICE_START_MINUTE)) * SCRUB_SIZE.w;
   const scrubY = (count) => SCRUB_SIZE.h - (count / Math.max(1, peak.count)) * (SCRUB_SIZE.h - 4);
   const areaPath =
     `M${scrubX(curve[0].t)} ${SCRUB_SIZE.h} ` +
     curve.map((point) => `L${scrubX(point.t).toFixed(1)} ${scrubY(point.count).toFixed(1)}`).join(' ') +
     ` L${scrubX(curve[curve.length - 1].t)} ${SCRUB_SIZE.h} Z`;
-  const countNow = curve.find((point) => point.t === Math.round(minute / 10) * 10)?.count ?? positions.length;
   const listed = lineFilter ? sorted.filter((position) => position.train.lineId === lineFilter) : sorted;
   const filterName = lineFilter ? net.lineById.get(lineFilter)?.name : undefined;
   const trainHeadingRef = useRef(null);
@@ -193,11 +193,11 @@ export function ReplayPanel({
         <input
           type="range"
           aria-label="Time of day"
-          min={240}
+          min={SERVICE_START_MINUTE}
           max={SERVICE_END_MINUTE}
           step={1}
           value={minute}
-          aria-valuetext={`${formatMinute(minute)}, about ${countNow} trains running`}
+          aria-valuetext={`${formatMinute(minute)}, ${plural(positions.length, 'train')} running`}
           onChange={(event) => clock.set(Number(event.target.value))}
         />
         <div className="scrub-ticks" aria-hidden="true">
@@ -205,7 +205,7 @@ export function ReplayPanel({
             <span
               key={tick}
               style={{
-                left: `calc(12px + (100% - 24px) * ${(tick * 60 - 240) / (SERVICE_END_MINUTE - 240)})`,
+                left: `calc(12px + (100% - 24px) * ${(tick * 60 - SERVICE_START_MINUTE) / (SERVICE_END_MINUTE - SERVICE_START_MINUTE)})`,
               }}
             >
               {formatMinute(tick * 60).replace(':00 ', ' ')}
@@ -223,7 +223,7 @@ export function ReplayPanel({
       </p>
       <div className="lens-field">
         <span className="field-label" id="speed-label">
-          Speed
+          Speed, in timetable minutes per second
         </span>
         <div className="seg" role="group" aria-labelledby="speed-label">
           {SPEEDS.map((speedOption) => (
@@ -231,9 +231,10 @@ export function ReplayPanel({
               key={speedOption.perSecond}
               type="button"
               aria-pressed={speed === speedOption.perSecond}
+              aria-label={speedOption.label}
               onClick={() => clock.setSpeed(speedOption.perSecond)}
             >
-              {speedOption.label}
+              {speedOption.perSecond}
             </button>
           ))}
         </div>

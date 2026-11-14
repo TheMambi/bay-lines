@@ -869,7 +869,6 @@ export function App() {
           onZoomOut={() => mapRef.current?.zoomOut()}
           onFit={() => mapRef.current?.fit()}
           onReset={onReset}
-          resetEnabled
         />
       </main>
       <div className="mobile-brand" aria-hidden="true" data-map-blocker>
@@ -927,7 +926,7 @@ export function App() {
           type="button"
           className="tool"
           onClick={() => setTheme(nextTheme)}
-          aria-label={`Colour theme: ${theme}. Switch to ${nextTheme}.`}
+          aria-label={`Color theme: ${theme}. Switch to ${nextTheme}.`}
           title={`Theme: ${theme}`}
         >
           <Icon name={themeIcon} size={20} />

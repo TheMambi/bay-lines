@@ -1,6 +1,7 @@
 import { ExternalLink } from './ExternalLink';
 import { Icon } from './Icon';
 import { LineChip } from './LineChip';
+import { ALERT_REFRESH_MS } from '../hooks/useAlerts';
 import { ALERT_EFFECTS, tagAlerts } from '../lib/alerts';
 import { formatDateTime, formatTime, plural, safeBartUrl, timeAgo } from '../lib/format';
 
@@ -135,8 +136,8 @@ export function AlertsPanel({ net, state, onRefresh, onStation }) {
         </a>
       </div>
       <p className="fine">
-        Source: BART’s GTFS-Realtime service-alerts feed, fetched by this app’s server and refreshed about
-        every 90 seconds while the page is open. This app does not show live train arrivals.
+        Source: BART’s official alerts feed, fetched by this app’s server and refreshed about every{' '}
+        {ALERT_REFRESH_MS / 1000} seconds while the page is open. This app does not show live train arrivals.
       </p>
     </div>
   );

@@ -3,6 +3,8 @@ import { Icon } from '../Icon';
 import { CopyScore } from './CopyScore';
 import { plural } from '../../lib/format';
 import {
+  ROUND_POINTS,
+  SPRINT_SECONDS,
   dailySeed,
   pickStations,
   randomSeed,
@@ -24,7 +26,7 @@ export function StationSprint({ net, onView, pickRef, onExit, best, onFocusMap, 
   const [round, setRound] = useState(0);
   const [phase, setPhase] = useState('ask');
   const [timed, setTimed] = useState(true);
-  const [secondsLeft, setSecondsLeft] = useState(12);
+  const [secondsLeft, setSecondsLeft] = useState(SPRINT_SECONDS);
   const [outcome, setOutcome] = useState(null);
   const [results, setResults] = useState([]);
   const [bestResult, setBestResult] = useState(null);
@@ -59,14 +61,14 @@ export function StationSprint({ net, onView, pickRef, onExit, best, onFocusMap, 
       return;
     }
     startedAtRef.current = performance.now();
-    setSecondsLeft(12);
+    setSecondsLeft(SPRINT_SECONDS);
     if (!timed) {
       return;
     }
     const timer = setInterval(() => {
       const elapsed = (performance.now() - startedAtRef.current) / 1000;
-      setSecondsLeft(Math.max(0, Math.ceil(12 - elapsed)));
-      if (elapsed >= 12) {
+      setSecondsLeft(Math.max(0, Math.ceil(SPRINT_SECONDS - elapsed)));
+      if (elapsed >= SPRINT_SECONDS) {
         answer(null);
       }
     }, 200);
@@ -117,7 +119,7 @@ export function StationSprint({ net, onView, pickRef, onExit, best, onFocusMap, 
           {score}{' '}
           <span>
             {'of '}
-            {1000}
+            {targets.length * ROUND_POINTS}
           </span>
         </p>
         {timed ? (
@@ -129,14 +131,14 @@ export function StationSprint({ net, onView, pickRef, onExit, best, onFocusMap, 
             </p>
           )
         ) : (
-          <p className="fine">Untimed games don’t count towards your best.</p>
+          <p className="fine">Untimed games don’t count toward your best.</p>
         )}
         <CopyScore
           text={shareText(
             timed ? 'Station Sprint' : 'Station Sprint (untimed)',
             isDaily ? { kind: 'today', date } : { kind: 'random' },
             score,
-            1000,
+            targets.length * ROUND_POINTS,
             results.map((result) => result.points),
           )}
         />
@@ -203,7 +205,11 @@ export function StationSprint({ net, onView, pickRef, onExit, best, onFocusMap, 
         <>
           {timed ? (
             <div className="timer" role="timer" aria-label={`${secondsLeft} seconds left`}>
-              <span className="timer-bar" aria-hidden="true" style={{ '--left': secondsLeft / 12 }} />
+              <span
+                className="timer-bar"
+                aria-hidden="true"
+                style={{ '--left': secondsLeft / SPRINT_SECONDS }}
+              />
               <span aria-hidden="true">
                 {secondsLeft}
                 {' s'}

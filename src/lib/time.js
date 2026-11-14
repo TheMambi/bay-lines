@@ -1,4 +1,9 @@
-const TIME_ZONE = 'America/Los_Angeles';
+export const TIME_ZONE = 'America/Los_Angeles';
+
+// Minutes after midnight. The service day runs from 4 am to 4 am and evening service starts at
+// 9 pm; test/data.test.js checks the time zone and the evening start against the schedule data.
+export const SERVICE_START_MINUTE = 240;
+export const EVENING_START_MINUTE = 1260;
 
 export const DAY_LABELS = { weekday: 'Weekday', saturday: 'Saturday', sunday: 'Sunday / holiday' };
 
@@ -17,8 +22,8 @@ export function serviceAt(date, overrides = {}) {
   const part = (type) => Number(parts.find((entry) => entry.type === type)?.value);
   const minutes = part('hour') * 60 + part('minute');
   let dayStart = Date.UTC(part('year'), part('month') - 1, part('day'));
-  let period = minutes >= 1260 ? 'evening' : 'day';
-  if (minutes < 240) {
+  let period = minutes >= EVENING_START_MINUTE ? 'evening' : 'day';
+  if (minutes < SERVICE_START_MINUTE) {
     dayStart -= 86400000;
     period = 'evening';
   }
@@ -59,7 +64,7 @@ export function serviceMinuteNow(date) {
   }).formatToParts(date);
   const part = (type) => Number(parts.find((entry) => entry.type === type)?.value);
   const minutes = part('hour') * 60 + part('minute');
-  if (minutes < 240) {
+  if (minutes < SERVICE_START_MINUTE) {
     return minutes + 1440;
   }
   return minutes;

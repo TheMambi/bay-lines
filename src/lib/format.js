@@ -1,3 +1,5 @@
+import { TIME_ZONE } from './time';
+
 export const formatFare = (cents) => {
   if (cents == null) {
     return '—';
@@ -17,13 +19,11 @@ export function formatDate(iso) {
   });
 }
 
-const DISPLAY_TIME_ZONE = 'America/Los_Angeles';
-
 export function formatTime(receivedAt) {
   return new Date(receivedAt).toLocaleTimeString('en-US', {
     hour: 'numeric',
     minute: '2-digit',
-    timeZone: DISPLAY_TIME_ZONE,
+    timeZone: TIME_ZONE,
     timeZoneName: 'short',
   });
 }
@@ -34,7 +34,7 @@ export function formatDateTime(value) {
     day: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
-    timeZone: DISPLAY_TIME_ZONE,
+    timeZone: TIME_ZONE,
     timeZoneName: 'short',
   });
 }

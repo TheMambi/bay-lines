@@ -5,6 +5,7 @@ import { RangeField } from '../RangeField';
 import { CopyScore } from './CopyScore';
 import { plural } from '../../lib/format';
 import {
+  ROUND_POINTS,
   WEEKDAY_DAY,
   dailySeed,
   guessPoints,
@@ -115,7 +116,7 @@ export function GuessTheRide({ net, onView, onExit, best, onShow, daily, date })
           {score}{' '}
           <span>
             {'of '}
-            {800}
+            {trips.length * ROUND_POINTS}
           </span>
         </p>
         {bestResult && (
@@ -130,7 +131,7 @@ export function GuessTheRide({ net, onView, onExit, best, onShow, daily, date })
             'Guess the Ride',
             isDaily ? { kind: 'today', date } : { kind: 'random' },
             score,
-            800,
+            trips.length * ROUND_POINTS,
             points,
           )}
         />

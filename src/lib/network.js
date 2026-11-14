@@ -191,11 +191,9 @@ function buildNetwork(networkData) {
     edgeByKey,
     activePatterns,
     linesAt: (stationId) => [...(linesByStation.get(stationId) ?? [])],
-    terminalLines: (stationId) => [...(endLinesByStation.get(stationId) ?? [])],
     isInterchange,
     isTerminal,
     degree,
-    neighbors: (stationId) => [...(adjacency.get(stationId) ?? [])],
     fareCents: (fromId, toId, categoryId = 'adult') => {
       const category = networkData.fares.categories.find((c) => c.id === categoryId);
       const fromIndex = fareIndex.get(fromId);

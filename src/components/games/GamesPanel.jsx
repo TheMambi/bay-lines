@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { GuessTheRide } from './GuessTheRide';
 import { StationSprint } from './StationSprint';
-import { EMPTY_GAME, readBest } from '../../lib/games';
+import { EMPTY_GAME, GUESS_ROUNDS, ROUND_POINTS, SPRINT_ROUNDS, readBest } from '../../lib/games';
 import { pacificDate } from '../../lib/time';
 
 export function GamesPanel(props) {
@@ -74,22 +74,22 @@ export function GamesPanel(props) {
           <span className="game-title">Station Sprint</span>
           <span className="game-blurb">
             {'The names are gone. Find '}
-            {10}
+            {SPRINT_ROUNDS}
             {' stations on the map, fast.'}
           </span>
           <span className="game-best">
-            {bests.sprint ? `Your best: ${bests.sprint} of 1000` : 'No score yet'}
+            {bests.sprint ? `Your best: ${bests.sprint} of ${SPRINT_ROUNDS * ROUND_POINTS}` : 'No score yet'}
           </span>
         </button>
         <button type="button" className="game-card" onClick={() => setGame('guess')}>
           <span className="game-title">Guess the Ride</span>
           <span className="game-blurb">
             {'How many minutes does the train take? '}
-            {8}
+            {GUESS_ROUNDS}
             {' trips, then see the schedule’s answer.'}
           </span>
           <span className="game-best">
-            {bests.guess ? `Your best: ${bests.guess} of 800` : 'No score yet'}
+            {bests.guess ? `Your best: ${bests.guess} of ${GUESS_ROUNDS * ROUND_POINTS}` : 'No score yet'}
           </span>
         </button>
       </div>

@@ -1,5 +1,6 @@
 import { ExternalLink } from './ExternalLink';
 import { formatDate } from '../lib/format';
+import { BOARDING_COST } from '../lib/graph';
 
 export const SOURCE_URL = 'https://github.com/TheMambi/bay-lines';
 
@@ -32,8 +33,8 @@ export function AboutContent({ net, geographyAttribution, today }) {
       <p>
         {'Network data was last checked against BART’s published sources on '}
         <strong>{formatDate(meta.lastVerified)}</strong>
-        {'. It comes from BART’s static schedule feed (GTFS, version '}
-        {meta.gtfs.feedVersion}).
+        {'. It comes from BART’s published schedule feed, version '}
+        {meta.gtfs.feedVersion}.
       </p>
       {feedExpired && !scheduleEnded && (
         <p className="notice notice-info">
@@ -69,7 +70,7 @@ export function AboutContent({ net, geographyAttribution, today }) {
           {
             ' search those real stopping patterns, respecting direction and where each train actually stops. Changing trains costs an assumed '
           }
-          {8}
+          {BOARDING_COST}
           {' minutes '}
           <em>only to rank options</em>; that number is never shown as a wait. With “Right now” chosen, the
           planner and Reach leave out a train once its last run of the day has left the stop where you would
@@ -132,7 +133,7 @@ export function AboutContent({ net, geographyAttribution, today }) {
           <strong>The land and Bay outline</strong>
           {': '}
           {geographyAttribution ??
-            'Natural Earth 1:10m land outline (public domain), generalised and stretched to fit the schematic.'}
+            'Natural Earth 1:10m land outline (public domain), generalized and stretched to fit the schematic.'}
           {' It’s only there to orient you.'}
         </li>
       </ul>
@@ -180,7 +181,7 @@ export function AboutContent({ net, geographyAttribution, today }) {
           listed under “Pick a train”, so nothing depends on clicking a moving target.
         </li>
       </ul>
-      <h3>Credits and licences</h3>
+      <h3>Credits and licenses</h3>
       <ul>
         <li>
           Bay Lines, copyright © 2026 TheMambi. It is free software under the{' '}
@@ -198,8 +199,8 @@ export function AboutContent({ net, geographyAttribution, today }) {
         <li>Land outline from Natural Earth (public domain).</li>
         <li>Typeface: Atkinson Hyperlegible Next, SIL Open Font License 1.1.</li>
         <li>
-          Built with React and other open-source software. Their copyright and licence notices are in{' '}
-          <ExternalLink href="/third-party-licenses.md">third-party licences</ExternalLink>.
+          Built with React and other open-source software. Their copyright and license notices are in{' '}
+          <ExternalLink href="/third-party-licenses.md">third-party licenses</ExternalLink>.
         </li>
       </ul>
     </div>

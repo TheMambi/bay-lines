@@ -198,19 +198,17 @@ export function usePanZoom(elRef, { content, minK = 0.35, maxK = 4.5, insets }) 
     };
     const onPointerDown = (event) => {
       if (event.pointerType !== 'mouse' || event.button === 0) {
-        if (!event.target.closest('[data-map-control]')) {
-          cancelAnimation();
-          userMovedRef.current = true;
-          pointers.set(event.pointerId, localPoint(event));
-          if (pointers.size === 1) {
-            draggedRef.current = false;
-            downAt = localPoint(event);
-          }
-          if (pointers.size === 2) {
-            draggedRef.current = true;
-          }
-          snapshot();
+        cancelAnimation();
+        userMovedRef.current = true;
+        pointers.set(event.pointerId, localPoint(event));
+        if (pointers.size === 1) {
+          draggedRef.current = false;
+          downAt = localPoint(event);
         }
+        if (pointers.size === 2) {
+          draggedRef.current = true;
+        }
+        snapshot();
       }
     };
     const onPointerMove = (event) => {
@@ -272,9 +270,6 @@ export function usePanZoom(elRef, { content, minK = 0.35, maxK = 4.5, insets }) 
       }
     };
     const onWheel = (event) => {
-      if (event.target.closest('[data-map-control]')) {
-        return;
-      }
       event.preventDefault();
       userMovedRef.current = true;
       const at = localPoint(event);
@@ -284,7 +279,7 @@ export function usePanZoom(elRef, { content, minK = 0.35, maxK = 4.5, insets }) 
       zoomAt(factor, at);
     };
     const onDoubleClick = (event) => {
-      if (event.target.closest('[data-map-control],[data-station]')) {
+      if (event.target.closest('[data-station]')) {
         return;
       }
       const rect = el.getBoundingClientRect();
@@ -344,8 +339,6 @@ export function usePanZoom(elRef, { content, minK = 0.35, maxK = 4.5, insets }) 
       wasDragged,
       autoFit,
       fitAnimated,
-      visible,
-      commit,
     }),
     [
       view,
@@ -360,8 +353,6 @@ export function usePanZoom(elRef, { content, minK = 0.35, maxK = 4.5, insets }) 
       wasDragged,
       autoFit,
       fitAnimated,
-      visible,
-      commit,
     ],
   );
 }

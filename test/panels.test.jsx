@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { AboutContent, SOURCE_URL } from '../src/components/AboutContent';
 import { ReachPanel } from '../src/components/ReachPanel';
 import { TripPanel } from '../src/components/trip/TripPanel';
+import { BOARDING_COST } from '../src/lib/graph';
 import { net } from '../src/lib/network';
 import { computeReach } from '../src/lib/reach';
 import { planTrips } from '../src/lib/routing';
@@ -114,6 +115,10 @@ describe('About text', () => {
     const html = about('2027-02-01');
     expect(html).toContain('This timetable ended on Jan 10, 2027.');
     expect(html).toContain('before you travel');
+  });
+
+  it('quotes the cost of a change of train from the planner’s own constant', () => {
+    expect(about('2026-11-13')).toContain(`Changing trains costs an assumed ${BOARDING_COST} minutes`);
   });
 
   it('shows the app’s own copyright, licence and a link to its source', () => {

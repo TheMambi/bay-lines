@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { assertAlertsPayload } from '../lib/alerts';
 
-const ALERT_REFRESH_MS = 90000;
+export const ALERT_REFRESH_MS = 90000;
 
 /**
  * Polls the app's /api/alerts proxy while the page is visible.

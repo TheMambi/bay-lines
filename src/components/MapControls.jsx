@@ -1,8 +1,8 @@
 import { Icon } from './Icon';
 
-export function MapControls({ onZoomIn, onZoomOut, onFit, onReset, resetEnabled }) {
+export function MapControls({ onZoomIn, onZoomOut, onFit, onReset }) {
   return (
-    <div className="map-controls" role="group" aria-label="Map controls" data-map-control data-map-blocker>
+    <div className="map-controls" role="group" aria-label="Map controls" data-map-blocker>
       <button type="button" className="ctl" onClick={onZoomIn} aria-label="Zoom in" title="Zoom in">
         <Icon name="plus" />
       </button>
@@ -22,7 +22,6 @@ export function MapControls({ onZoomIn, onZoomOut, onFit, onReset, resetEnabled 
         type="button"
         className="ctl"
         onClick={onReset}
-        disabled={!resetEnabled}
         aria-label="Reset: clear selection and highlight, and fit the network"
         title="Reset selection and view"
       >

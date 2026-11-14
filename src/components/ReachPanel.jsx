@@ -336,8 +336,8 @@ export function ReachPanel({
               {' cannot be reached right now: the last regular trains there in this service have gone.'}
             </p>
           )}
-          <h3 className="sr-only">Colour key</h3>
-          <ul className="reach-legend" aria-label="Colour key, minutes from the start">
+          <h3 className="sr-only">Color key</h3>
+          <ul className="reach-legend" aria-label="Color key, minutes from the start">
             {legend.map((band) => (
               <li key={band.band} data-band={band.band}>
                 <span className="reach-swatch" aria-hidden="true" />
@@ -356,7 +356,7 @@ export function ReachPanel({
         step={5}
         value={horizon}
         onChange={onHorizon}
-        hint="Colours and the list show stations you could reach within this many minutes."
+        hint="Colors and the list show stations you could reach within this many minutes."
       />
       <RangeField
         label="Wait for your first train"
@@ -430,8 +430,8 @@ export function ReachPanel({
         </p>
       )}
       <p className="fine lens-note">
-        The map is a diagram, not to scale: colours and numbers show time, not distance. Times come from
-        BART’s published schedule, so real trips can take longer.
+        The map is a diagram, not to scale: colors and numbers show time, not distance. Times come from BART’s
+        published schedule, so real trips can take longer.
       </p>
     </section>
   );

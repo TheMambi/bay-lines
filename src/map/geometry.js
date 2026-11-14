@@ -1,5 +1,5 @@
 import { edgeKey } from '../lib/network';
-import { BENDS, CORRIDORS, LANE_GAP, LINE_ORDER, STATION_LAYOUT } from './schematic';
+import { CORRIDORS, GRID, LANE_GAP, LINE_ORDER, STATION_LAYOUT } from './schematic';
 
 const normalize = (v) => {
   const len = Math.hypot(v.x, v.y) || 1;
@@ -40,7 +40,7 @@ export function buildGeometry(net) {
     if (!layout) {
       throw Error(`No layout for station ${stationId}`);
     }
-    return { x: layout.x * 11, y: layout.y * 11 };
+    return { x: layout.x * GRID, y: layout.y * GRID };
   };
   const corridorEdges = new Map();
   for (const corridor of CORRIDORS) {
@@ -57,16 +57,12 @@ export function buildGeometry(net) {
     if (!oriented) {
       throw Error(`Track segment ${netEdge.key} is not in any corridor`);
     }
-    const bends = (BENDS[`${oriented.from}|${oriented.to}`] ?? []).map(([x, y]) => ({
-      x: x * 11,
-      y: y * 11,
-    }));
     const lines = [...netEdge.lineIds].sort((a, b) => LINE_ORDER.indexOf(a) - LINE_ORDER.indexOf(b));
     edges.push({
       key: netEdge.key,
       from: oriented.from,
       to: oriented.to,
-      pts: [pos(oriented.from), ...bends, pos(oriented.to)],
+      pts: [pos(oriented.from), pos(oriented.to)],
       lines,
     });
   }

@@ -185,3 +185,28 @@ describe('the footer', () => {
     expect(app.querySelector('.prose .notice-warn').textContent).toContain('This timetable ended');
   });
 });
+
+describe('labels read out by a screen reader', () => {
+  it('gives the Replay slider the same train count as the readout beside it', async () => {
+    const app = await openApp('#mode=replay');
+    await advance(200);
+    const readout = app.querySelector('.clock-sub').textContent.match(/\d+ trains? running/)[0];
+    const slider = app.querySelector('input[aria-label="Time of day"]');
+    expect(slider.getAttribute('aria-valuetext')).toBe(
+      `${app.querySelector('.clock-time').textContent}, ${readout}`,
+    );
+    expect(button(app, '1 minute per second').textContent).toBe('1');
+    expect(button(app, '10 minutes per second').textContent).toBe('10');
+  });
+
+  it('says "line" for a station on one line while Station Sprint hides the names', async () => {
+    const app = await openApp('#mode=play');
+    await click(app.querySelector('.game-card'));
+    await advance(200);
+    const label = (id) => app.querySelector(`#station-${id}`).getAttribute('aria-label');
+    const hidden = ['ANTC', 'MCAR'].filter((id) => label(id).startsWith('Station on the'));
+    expect(hidden).toEqual(['ANTC', 'MCAR']);
+    expect(label('ANTC')).toBe('Station on the Yellow line.');
+    expect(label('MCAR')).toBe('Station on the Orange, Red, Yellow lines.');
+  });
+});

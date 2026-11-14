@@ -1,4 +1,5 @@
-export const BENDS = {};
+// Map units per step of the layout grid that STATION_LAYOUT and AREA_LABELS are placed on.
+export const GRID = 11;
 
 export const CORRIDORS = [
   ['RICH', 'DELN', 'PLZA', 'NBRK', 'DBRK', 'ASHB', 'MCAR', '19TH', '12TH'],
@@ -87,7 +88,6 @@ export const TRACK_FEATURES = [
     id: 'ebart-transfer-platform',
     between: ['PITT', 'PCTR'],
     at: 0.5,
-    label: 'Transfer Platform',
     note: 'Riders change trains here between BART and the eBART (diesel multiple unit) trains to Pittsburg Center and Antioch. The platform can only be reached by train.',
     source: 'https://www.bart.gov/stations/pctr',
   },
