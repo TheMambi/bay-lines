@@ -24,7 +24,8 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
-          node-version: 26 # same major as the Vercel project
+          # package.json's engines field is the one place the Node version is set. Vercel reads it too.
+          node-version-file: package.json
           cache: npm
       - run: npm ci --ignore-scripts
       - run: npm audit --audit-level=moderate

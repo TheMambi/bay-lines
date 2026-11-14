@@ -48,7 +48,7 @@ npm run lint
 npm run build && npm run preview
 ```
 
-Node 20 or newer.
+Node 26, the version in `package.json` that CI and the Vercel build also read.
 
 ## Project layout
 

@@ -18,7 +18,7 @@ BART's own websites and feeds are not part of this project. Report problems with
 ## How the app is hardened
 
 - A Content-Security-Policy in `vercel.json` allows scripts, styles, fonts and network requests from the site's own origin only. Inline scripts and styles are blocked.
-- `/api/alerts` fetches one fixed BART URL. It takes no input from the caller, caps the size of what it reads and returns, and reuses its last answer for 30 seconds so requests can't be multiplied into traffic to BART.
+- `/api/alerts` fetches one fixed BART URL and refuses to follow a redirect away from it. It takes no input from the caller and caps the size of what it reads and returns, including the length of each route and stop id. Each running copy of the function asks BART at most once every 30 seconds while BART answers and once every 15 seconds while it fails, and requests that arrive together share one call. A copy older than 15 minutes is not served. Vercel can run several copies at once, and each keeps its own count.
 - Text from the alerts feed is rendered as plain text. Its link is shown only if it points to bart.gov over https.
 - The browser keeps two things in local storage: the theme choice and best game scores.
 - CI runs `npm audit`, lint, tests and a production build on every push. Dependabot opens update pull requests.

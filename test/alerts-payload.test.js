@@ -1,15 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import GtfsRealtimeBindings from 'gtfs-realtime-bindings';
 import { decodeAlertsFeed } from '../api/_lib/alerts-feed.js';
 import { assertAlertsPayload, tagAlerts } from '../src/lib/alerts';
 import { net } from '../src/lib/network';
+import { HEADER, encodeFeed, text } from './feed.js';
 
-const { FeedMessage } = GtfsRealtimeBindings.transit_realtime;
-const text = (t) => ({ translation: [{ text: t, language: 'en' }] });
-const encode = (entity) =>
-  FeedMessage.encode(
-    FeedMessage.fromObject({ header: { gtfsRealtimeVersion: '2.0', timestamp: 1794169068 }, entity }),
-  ).finish();
+const encode = (entity) => encodeFeed({ header: HEADER, entity });
 
 const alert = (overrides) => ({
   id: 'BSA_1',

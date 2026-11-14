@@ -14,12 +14,22 @@ export const MAX_FEED_BYTES = 1024 * 1024;
 // turn each one into a request to BART.
 export const MIN_REFETCH_MS = 30000;
 
+// After a failed attempt the function answers from memory for this long before it tries
+// BART again, so an outage is not met with one upstream request per visitor.
+export const FAILURE_BACKOFF_MS = 15000;
+
+// The last good copy is served, marked stale, for at most this long after it was read.
+export const MAX_STALE_MS = 15 * 60 * 1000;
+
 const FRESH_CACHE = 'public, max-age=0, s-maxage=60, stale-while-revalidate=120';
 
 // Last good payload, kept per warm instance so a brief upstream outage
 // can still be answered (marked stale) instead of failing outright.
 let lastGood = null;
 let lastGoodAt = 0;
+let lastFailedAt = -Infinity;
+// Callers that arrive while a request to BART is under way wait for that one request.
+let inFlight = null;
 
 const json = (body, status, cacheControl, extraHeaders) =>
   new Response(JSON.stringify(body), {
@@ -33,7 +43,11 @@ const json = (body, status, cacheControl, extraHeaders) =>
   });
 
 async function readFeed() {
-  const upstream = await fetch(FEED_URL, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+  const upstream = await fetch(FEED_URL, {
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    // The feed has one fixed address. A redirect away from it is treated as an outage.
+    redirect: 'error',
+  });
   if (!upstream.ok) throw new Error(`upstream status ${upstream.status}`);
   if (Number(upstream.headers.get('content-length')) > MAX_FEED_BYTES) {
     throw new Error('upstream feed too large');
@@ -55,6 +69,25 @@ async function readFeed() {
   return bytes;
 }
 
+// Resolves to the new payload, or to null when BART could not be read.
+function refresh() {
+  inFlight ??= readFeed()
+    .then((bytes) => {
+      lastGood = decodeAlertsFeed(bytes);
+      lastGoodAt = Date.now();
+      return lastGood;
+    })
+    .catch((error) => {
+      lastFailedAt = Date.now();
+      console.error('alerts proxy failed:', error.message);
+      return null;
+    })
+    .finally(() => {
+      inFlight = null;
+    });
+  return inFlight;
+}
+
 export default {
   async fetch(request) {
     if (request.method !== 'GET' && request.method !== 'HEAD') {
@@ -63,15 +96,12 @@ export default {
     if (lastGood && Date.now() - lastGoodAt < MIN_REFETCH_MS) {
       return json(lastGood, 200, FRESH_CACHE);
     }
-    try {
-      const payload = decodeAlertsFeed(await readFeed());
-      lastGood = payload;
-      lastGoodAt = Date.now();
-      return json(payload, 200, FRESH_CACHE);
-    } catch (error) {
-      console.error('alerts proxy failed:', error.message);
-      if (lastGood) return json({ ...lastGood, stale: true }, 200, 'no-store');
-      return json({ error: 'BART’s alerts feed could not be reached.' }, 502, 'no-store');
+    const backingOff = Date.now() - lastFailedAt < FAILURE_BACKOFF_MS;
+    const payload = backingOff ? null : await refresh();
+    if (payload) return json(payload, 200, FRESH_CACHE);
+    if (lastGood && Date.now() - lastGoodAt < MAX_STALE_MS) {
+      return json({ ...lastGood, stale: true }, 200, 'no-store');
     }
+    return json({ error: 'BART’s alerts feed could not be reached.' }, 502, 'no-store');
   },
 };

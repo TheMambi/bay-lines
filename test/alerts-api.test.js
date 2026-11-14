@@ -1,13 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import GtfsRealtimeBindings from 'gtfs-realtime-bindings';
 import { LIMITS, decodeAlertsFeed } from '../api/_lib/alerts-feed.js';
+import { HEADER, encodeFeed, text } from './feed.js';
 
-const { FeedMessage } = GtfsRealtimeBindings.transit_realtime;
-const text = (t) => ({ translation: [{ text: t, language: 'en' }] });
-const encode = (entity) =>
-  FeedMessage.encode(
-    FeedMessage.fromObject({ header: { gtfsRealtimeVersion: '2.0', timestamp: 1794169068 }, entity }),
-  ).finish();
+const encode = (entity) => encodeFeed({ header: HEADER, entity });
 
 const feedBytes = encode([{ id: 'BSA_1', alert: { headerText: text('Elevator out') } }]);
 const get = (path = '/api/alerts') => new Request(`http://localhost${path}`);
@@ -76,6 +71,92 @@ describe('GET /api/alerts', () => {
   });
 });
 
+describe('GET /api/alerts while BART is failing or slow', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  const failing = () =>
+    vi.fn(async () => {
+      throw new Error('network down');
+    });
+
+  it('calls BART once for ten requests in a row during an outage, then waits before retrying', async () => {
+    const { handler, FAILURE_BACKOFF_MS } = await loadHandler();
+    const upstream = failing();
+    vi.stubGlobal('fetch', upstream);
+    for (let i = 0; i < 10; i++) {
+      const response = await handler.fetch(get(`/api/alerts?n=${i}`));
+      expect(response.status).toBe(502);
+      expect(response.headers.get('cache-control')).toBe('no-store');
+    }
+    expect(upstream).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(FAILURE_BACKOFF_MS + 1);
+    await handler.fetch(get());
+    expect(upstream).toHaveBeenCalledTimes(2);
+  });
+
+  it('calls BART once for ten requests in a row when its good copy has expired', async () => {
+    const { handler, MIN_REFETCH_MS } = await loadHandler();
+    vi.stubGlobal('fetch', async () => new Response(feedBytes));
+    await handler.fetch(get());
+    vi.advanceTimersByTime(MIN_REFETCH_MS + 1);
+    const upstream = failing();
+    vi.stubGlobal('fetch', upstream);
+    for (let i = 0; i < 10; i++) {
+      const response = await handler.fetch(get());
+      expect((await response.json()).stale).toBe(true);
+    }
+    expect(upstream).toHaveBeenCalledTimes(1);
+  });
+
+  it('shares one call to BART between ten requests that arrive together', async () => {
+    const { handler } = await loadHandler();
+    let answer;
+    const upstream = vi.fn(() => new Promise((resolve) => (answer = resolve)));
+    vi.stubGlobal('fetch', upstream);
+    const pending = Array.from({ length: 10 }, () => handler.fetch(get()));
+    answer(new Response(feedBytes));
+    const responses = await Promise.all(pending);
+    expect(responses.map((r) => r.status)).toEqual(Array(10).fill(200));
+    expect(upstream).toHaveBeenCalledTimes(1);
+  });
+
+  it('shares one failed call between ten requests that arrive together', async () => {
+    const { handler } = await loadHandler();
+    const upstream = failing();
+    vi.stubGlobal('fetch', upstream);
+    const responses = await Promise.all(Array.from({ length: 10 }, () => handler.fetch(get())));
+    expect(responses.map((r) => r.status)).toEqual(Array(10).fill(502));
+    expect(upstream).toHaveBeenCalledTimes(1);
+  });
+
+  it('stops serving the last good copy once it is too old', async () => {
+    const { handler, MAX_STALE_MS } = await loadHandler();
+    vi.stubGlobal('fetch', async () => new Response(feedBytes));
+    await handler.fetch(get());
+    vi.stubGlobal('fetch', failing());
+    vi.advanceTimersByTime(MAX_STALE_MS - 1000);
+    expect((await handler.fetch(get())).status).toBe(200);
+    vi.advanceTimersByTime(60000);
+    expect((await handler.fetch(get())).status).toBe(502);
+  });
+
+  it('refuses to follow a redirect away from the feed address', async () => {
+    const { handler } = await loadHandler();
+    const upstream = vi.fn(async () => new Response(feedBytes));
+    vi.stubGlobal('fetch', upstream);
+    await handler.fetch(get());
+    expect(upstream.mock.calls[0][1].redirect).toBe('error');
+  });
+});
+
 describe('decodeAlertsFeed limits', () => {
   it('caps the number of alerts and the length of their text', () => {
     const entity = Array.from({ length: LIMITS.alerts + 20 }, (_, i) => ({
@@ -91,5 +172,14 @@ describe('decodeAlertsFeed limits', () => {
     expect(alerts[0].headline).toHaveLength(LIMITS.headline);
     expect(alerts[0].description).toHaveLength(LIMITS.description);
     expect(alerts[0].url).toBeNull();
+  });
+
+  it('drops route and stop ids that are too long to be real', () => {
+    const long = 'R'.repeat(100000);
+    const informedEntity = [{ routeId: long }, { stopId: long }, { routeId: '11' }, { stopId: 'A10-1' }];
+    const payload = decodeAlertsFeed(encode([{ id: 'A', alert: { headerText: text('h'), informedEntity } }]));
+    expect(payload.alerts[0].routes).toEqual(['11']);
+    expect(payload.alerts[0].stations).toEqual(['LAKE']);
+    expect(JSON.stringify(payload).length).toBeLessThan(2000);
   });
 });
