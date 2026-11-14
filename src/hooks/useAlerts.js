@@ -8,12 +8,6 @@ const ALERT_REFRESH_MS = 90000;
  * State: { kind: 'loading' } | { kind: 'ready', data, receivedAt }
  *      | { kind: 'error', message, lastGood?: { data, receivedAt } }
  */
-
-/**
- * Polls the app's /api/alerts proxy while the page is visible.
- * State: { kind: 'loading' } | { kind: 'ready', data, receivedAt }
- *      | { kind: 'error', message, lastGood?: { data, receivedAt } }
- */
 export function useAlerts(url = '/api/alerts') {
   const [state, setState] = useState({ kind: 'loading' });
   const lastGoodRef = useRef(undefined);

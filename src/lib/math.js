@@ -8,5 +8,5 @@ export const easeInOutCubic = (p) => {
 };
 
 export function prefersReducedMotion() {
-  return typeof window < 'u' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  return typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 }

@@ -1,9 +1,10 @@
 import { ExternalLink } from './ExternalLink';
 import { formatDate } from '../lib/format';
 
-export function AboutContent({ net, geographyAttribution }) {
+export function AboutContent({ net, geographyAttribution, today }) {
   const meta = net.data.meta;
-  const feedExpired = meta.gtfs.feedEndDate < meta.lastVerified;
+  const feedExpired = meta.gtfs.feedEndDate < today;
+  const scheduleEnded = meta.gtfs.calendarEndDate < today;
   return (
     <div className="prose">
       <p className="lede">
@@ -13,6 +14,18 @@ export function AboutContent({ net, geographyAttribution }) {
           ' map and route suggester for the BART network. It is not made by, affiliated with, or endorsed by Bay Area Rapid Transit. The line diagram is an original schematic; it is not BART’s system map and does not use BART’s logos.'
         }
       </p>
+      {scheduleEnded && (
+        <p className="notice notice-warn">
+          <span>
+            <strong>This timetable ended on {formatDate(meta.gtfs.calendarEndDate)}.</strong>
+            {
+              ' The app still shows it, so routes, times, fares and holiday service may no longer match what BART runs. Check '
+            }
+            <ExternalLink href={meta.agency.url}>bart.gov</ExternalLink>
+            {' before you travel.'}
+          </span>
+        </p>
+      )}
       <h3>What’s verified, and when</h3>
       <p>
         {'Network data was last checked against BART’s published sources on '}
@@ -20,7 +33,7 @@ export function AboutContent({ net, geographyAttribution }) {
         {'. It comes from BART’s static schedule feed (GTFS, version '}
         {meta.gtfs.feedVersion}).
       </p>
-      {feedExpired && (
+      {feedExpired && !scheduleEnded && (
         <p className="notice notice-info">
           <span>
             The feed’s own listed end date ({formatDate(meta.gtfs.feedEndDate)}

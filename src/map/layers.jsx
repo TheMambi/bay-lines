@@ -189,7 +189,7 @@ export const ReachLayer = memo(function ({ geometry, stops, horizon, origin, ori
   );
 });
 
-var PIN_GLYPHS = {
+const PIN_GLYPHS = {
   change: 'M-4.5 -2.2h8m-2.4 -2.4l2.4 2.4l-2.4 2.4M4.5 2.2h-8m2.4 -2.4l-2.4 2.4l2.4 2.4',
   right: 'M-4.6 0.4L-1.4 3.6L4.8 -3.6',
   wrong: 'M-3.8 -3.8L3.8 3.8M3.8 -3.8L-3.8 3.8',

@@ -1,5 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
+import { AboutContent } from '../src/components/AboutContent';
 import { ReachPanel } from '../src/components/ReachPanel';
 import { TripPanel } from '../src/components/trip/TripPanel';
 import { net } from '../src/lib/network';
@@ -99,5 +100,19 @@ describe('Trip panel', () => {
     expect(html).toContain('The last Red line train toward Millbrae');
     expect(html).toContain('left Richmond at 7:31 PM.');
     expect(html).toContain('They are connected in:');
+  });
+});
+
+describe('About text', () => {
+  const about = (today) => renderToStaticMarkup(<AboutContent net={net} today={today} />);
+
+  it('says nothing about an ended timetable while the calendar still runs', () => {
+    expect(about(net.data.meta.gtfs.calendarEndDate)).not.toContain('This timetable ended');
+  });
+
+  it('warns once today is past the end of the calendar', () => {
+    const html = about('2027-02-01');
+    expect(html).toContain('This timetable ended on Jan 10, 2027.');
+    expect(html).toContain('before you travel');
   });
 });

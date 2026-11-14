@@ -72,3 +72,14 @@ export function formatMinute(minute) {
   const suffix = hours >= 12 ? 'PM' : 'AM';
   return `${hours % 12 === 0 ? 12 : hours % 12}:${String(mins).padStart(2, '0')} ${suffix}`;
 }
+
+export function pacificDate(date) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date);
+  const part = (type) => parts.find((entry) => entry.type === type)?.value;
+  return `${part('year')}-${part('month')}-${part('day')}`;
+}

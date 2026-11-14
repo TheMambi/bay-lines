@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AboutContent } from './components/AboutContent';
 import { AlertsPanel } from './components/AlertsPanel';
 import { Dialog } from './components/Dialog';
+import { ExternalLink } from './components/ExternalLink';
 import { Icon } from './components/Icon';
 import { LinesCard } from './components/LinesCard';
 import { MapControls } from './components/MapControls';
@@ -24,7 +25,7 @@ import { net, serviceKey } from './lib/network';
 import { computeReach, meetingPoints } from './lib/reach';
 import { ReplayClock } from './lib/replay';
 import { planTrips } from './lib/routing';
-import { serviceAt, serviceMinuteNow } from './lib/time';
+import { pacificDate, serviceAt, serviceMinuteNow } from './lib/time';
 import { TransitMap } from './map/TransitMap';
 
 const MODES = ['explore', 'trip', 'reach', 'replay', 'play'];
@@ -127,7 +128,7 @@ export function App() {
   const [dialog, setDialog] = useState(null);
   const [snap, setSnap] = useState(() => {
     if (
-      (typeof window < 'u' && window.matchMedia('(min-width: 900px)').matches) ||
+      (typeof window !== 'undefined' && window.matchMedia('(min-width: 900px)').matches) ||
       initial.station ||
       initial.from ||
       initial.to ||
@@ -143,6 +144,9 @@ export function App() {
   const [sheetHeight, setSheetHeight] = useState(0);
   const { state, refresh } = useAlerts();
   const now = useNow();
+  const today = useMemo(() => pacificDate(now), [now]);
+  const scheduleEnd = net.data.meta.gtfs.calendarEndDate;
+  const scheduleEnded = today > scheduleEnd;
   const nowServiceId = useMemo(() => serviceKey(serviceAt(now, net.data.meta.serviceDateOverrides)), [now]);
   // The clock ticks every minute. The service object must change only when the day or period does,
   // or everything keyed on it (the chosen route option, Reach, the line layer) resets every minute.
@@ -160,7 +164,7 @@ export function App() {
     () =>
       new ReplayClock(
         nowMinute,
-        typeof window < 'u' && window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+        typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches,
       ),
   );
   useEffect(() => () => clock.pause(), [clock]);
@@ -782,6 +786,14 @@ export function App() {
     );
   const renderFooter = (className) => (
     <footer className={className}>
+      {scheduleEnded && (
+        <p>
+          <strong>This timetable ended on {formatDate(scheduleEnd)}.</strong>
+          {' Routes, times and fares here may be out of date. Check '}
+          <ExternalLink href={net.data.meta.agency.url}>bart.gov</ExternalLink>
+          {' before you travel.'}
+        </p>
+      )}
       <p>
         {'Unofficial — not affiliated with BART. Data checked '}
         {formatDate(net.data.meta.lastVerified)}; schedule-based, no live arrivals.{' '}
@@ -1104,7 +1116,7 @@ export function App() {
         onClose={() => setDialog(null)}
         className="dialog-wide"
       >
-        <AboutContent net={net} geographyAttribution={geography?.attribution} />
+        <AboutContent net={net} geographyAttribution={geography?.attribution} today={today} />
       </Dialog>
     </div>
   );

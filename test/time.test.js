@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatClock, formatMinute, serviceAt, serviceMinuteNow } from '../src/lib/time';
+import { formatClock, formatMinute, pacificDate, serviceAt, serviceMinuteNow } from '../src/lib/time';
 
 // 2026-11-09 is a Monday. Pacific time is UTC-8 in November.
 const pacific = (iso) => new Date(`${iso}-08:00`);
@@ -29,5 +29,13 @@ describe('clock helpers', () => {
 
   it('counts minutes after midnight past 24:00 for late service', () => {
     expect(serviceMinuteNow(pacific('2026-11-10T01:00'))).toBe(25 * 60);
+  });
+});
+
+describe('pacificDate', () => {
+  it('gives the calendar date in California, not in UTC', () => {
+    expect(pacificDate(new Date('2027-01-11T07:59:00Z'))).toBe('2027-01-10');
+    expect(pacificDate(new Date('2027-01-11T08:00:00Z'))).toBe('2027-01-11');
+    expect(pacificDate(new Date('2026-07-04T06:59:00Z'))).toBe('2026-07-03');
   });
 });

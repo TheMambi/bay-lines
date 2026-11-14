@@ -1,9 +1,9 @@
 export async function loadGeography() {
-  const _default = (await import('../data/geography.json')).default;
+  const geography = (await import('../data/geography.json')).default;
   return {
-    land: _default.land,
-    coast: _default.coast,
-    extent: _default.extent,
-    attribution: _default.attribution,
+    land: geography.land,
+    coast: geography.coast,
+    extent: geography.extent,
+    attribution: geography.attribution,
   };
 }

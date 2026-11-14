@@ -72,7 +72,7 @@ The site sends a strict Content-Security-Policy, the alerts function accepts no 
 
 ## Data and licences
 
-- **Schedule data** (`src/data/network.json`) is derived from BART's [static GTFS feed](https://www.bart.gov/schedules/developers/gtfs), version 72, last checked on September 29, 2026. Transit data is © Bay Area Rapid Transit and used under the [BART Developer License Agreement](https://www.bart.gov/dla). The current schedule's calendar runs to January 10, 2027; after that the app keeps working but shows the old timetable until the data is regenerated from a newer feed.
+- **Schedule data** (`src/data/network.json`) is derived from BART's [static GTFS feed](https://www.bart.gov/schedules/developers/gtfs), version 72, last checked on September 29, 2026. Transit data is © Bay Area Rapid Transit and used under the [BART Developer License Agreement](https://www.bart.gov/dla). The current schedule's calendar runs to January 10, 2027. After that date the app keeps working, shows the old timetable, and says in the footer and in the About text that the timetable has ended. `npm test` starts failing 30 days before the end as a reminder to rebuild the data from a newer feed.
 - **Service alerts** come from BART's [GTFS-Realtime feed](https://www.bart.gov/schedules/developers/gtfs-realtime), which needs no API key.
 - **Station details** such as addresses, connecting services and elevator information are not reproduced. Each station card links to BART's own page, which stays current.
 - **Land outline** (`src/data/geography.json`) is generalised from [Natural Earth](https://www.naturalearthdata.com/) 1:10m data, which is public domain.
@@ -80,4 +80,6 @@ The site sends a strict Content-Security-Policy, the alerts function accepts no 
 
 Copyright (C) 2026 TheMambi. This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. See `LICENSE` for the full text.
 
-The AGPL licence covers the source code only. The files in `src/data/` are not covered by it: `network.json` is derived from BART's GTFS feed and used under the BART Developer License Agreement, and `geography.json` is derived from Natural Earth data, which is public domain.
+The AGPL licence covers the source code only. Three generated data files are not covered by it: `src/data/network.json` and `api/_lib/stop-parents.js` are derived from BART's GTFS feed and used under the BART Developer License Agreement, and `src/data/geography.json` is derived from Natural Earth data, which is public domain.
+
+The script that builds those three files is not in this repository yet, so they cannot be rebuilt from a fresh clone.

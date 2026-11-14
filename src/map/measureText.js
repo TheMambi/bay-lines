@@ -8,7 +8,7 @@ export function measureText(text, size, weight, family) {
   if (cached != null) {
     return cached;
   }
-  if (!measureCtx && typeof document < 'u') {
+  if (!measureCtx && typeof document !== 'undefined') {
     measureCtx = document.createElement('canvas').getContext('2d');
   }
   let width;

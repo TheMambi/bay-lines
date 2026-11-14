@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { STOP_PARENTS } from '../api/_lib/stop-parents.js';
 import { assertNetwork, net } from '../src/lib/network';
+import { pacificDate } from '../src/lib/time';
 import { buildGeometry } from '../src/map/geometry';
 import { STATION_LAYOUT } from '../src/map/schematic';
 
@@ -34,6 +35,35 @@ describe('network.json', () => {
         expect(row, category.id).toHaveLength(order.length);
         expect(row.every(Number.isFinite), category.id).toBe(true);
       }
+    }
+  });
+});
+
+describe('schedule calendar', () => {
+  const WARN_DAYS = 30;
+  const daysLeft = (endDate, date) =>
+    Math.round((Date.parse(endDate) - Date.parse(pacificDate(date))) / 86400000);
+
+  it('counts whole days to the end of the calendar', () => {
+    expect(daysLeft('2027-01-10', new Date('2026-12-10T20:00:00Z'))).toBe(31);
+    expect(daysLeft('2027-01-10', new Date('2027-01-01T20:00:00Z'))).toBe(9);
+    expect(daysLeft('2027-01-10', new Date('2027-02-01T20:00:00Z'))).toBe(-22);
+  });
+
+  // This test is meant to start failing on its own. When it does, the schedule is about to run out:
+  // rebuild network.json from BART's current feed. From the day after the end the app warns riders.
+  it(`still has more than ${WARN_DAYS} days of schedule left`, () => {
+    const end = net.data.meta.gtfs.calendarEndDate;
+    expect(
+      daysLeft(end, new Date()),
+      `The schedule in src/data/network.json ends on ${end}. Rebuild it from BART's current GTFS feed.`,
+    ).toBeGreaterThan(WARN_DAYS);
+  });
+
+  it('lists no holiday after the calendar ends', () => {
+    const end = net.data.meta.gtfs.calendarEndDate;
+    for (const date of Object.keys(net.data.meta.serviceDateOverrides)) {
+      expect(date <= end, date).toBe(true);
     }
   });
 });
