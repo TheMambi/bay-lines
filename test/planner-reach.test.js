@@ -85,7 +85,8 @@ describe('route search shared by the trip planner and Reach', () => {
   });
 });
 
-describe('trip planner, every station pair in every service', () => {
+// Walks every station pair in every service; GitHub's runners need more than the 5 s default.
+describe('trip planner, every station pair in every service', { timeout: 30_000 }, () => {
   it('returns a route whose legs join up from the start to the destination', () => {
     const problems = everyPair((service, from, to, report) => {
       const result = planTrips(net, service, from, to);
