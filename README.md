@@ -52,7 +52,7 @@ Node 26, the version in `package.json` that CI and the Vercel build also read.
 
 ## Branches
 
-Work lands on `dev`, the default branch, and Dependabot's pull requests target it. There is no `main` branch yet. CI already lists `main`, so the same checks apply once it exists.
+Work lands on `dev`, the default branch, and Dependabot's pull requests target it. `main` follows `dev` and moves forward only after CI passes on `dev`. CI runs the same checks on both.
 
 Traps this project has already hit, with their cause and fix, are in [docs/PITFALLS.md](docs/PITFALLS.md). Read it before changing the map, the alerts function or the data.
 
